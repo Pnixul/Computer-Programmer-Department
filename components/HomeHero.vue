@@ -4,28 +4,28 @@
       <div class="grid items-center gap-10 md:grid-cols-[1.05fr_0.95fr] lg:gap-14">
         <section class="max-w-3xl">
           <div class="eyebrow">
-            Badge Placeholder
+            พื้นที่สำหรับข้อความแนะนำ
           </div>
 
           <h1 class="max-w-[760px] text-4xl font-extrabold leading-tight text-[var(--color-text)] sm:text-5xl md:text-6xl lg:text-[4.25rem]">
-            Main Heading Placeholder
+            พื้นที่สำหรับข้อความหลักของแผนก
           </h1>
 
           <p class="body-copy mt-6 max-w-[660px] sm:mt-7 lg:mt-8">
-            Paragraph placeholder for the department introduction, student opportunities, and learning focus.
+            เรียนรู้การเขียนโปรแกรม การพัฒนาเว็บไซต์ และทักษะด้านเทคโนโลยี ผ่านการลงมือทำและประสบการณ์จริง
           </p>
 
           <div class="mt-8 flex flex-col gap-3 sm:mt-10 sm:flex-row sm:items-center">
-            <a href="#curriculum" class="btn-primary">
-              Primary Button
+            <a href="#about" class="btn-primary">
+              รู้จักแผนกของเรา
             </a>
-            <a href="#about" class="btn-secondary">
-              Secondary Button
+            <a href="#projects" class="btn-secondary">
+              ดูผลงานนักศึกษา
             </a>
           </div>
         </section>
 
-        <section class="flex justify-center md:justify-end" aria-label="Department visual placeholder">
+        <section class="flex justify-center md:justify-end" aria-label="พื้นที่สำหรับภาพประกอบของแผนก">
           <div class="surface-card w-full max-w-[540px] p-4 sm:p-5 lg:max-w-[560px]">
             <div class="rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)]">
               <div class="flex items-center gap-2 border-b border-[var(--color-border)] px-4 py-3">
@@ -44,7 +44,7 @@
                     <div class="h-16 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)]"></div>
                   </div>
                   <p class="pt-2 text-center text-sm font-bold text-[var(--color-muted)]">
-                    Illustration Placeholder
+                    พื้นที่สำหรับภาพประกอบ
                   </p>
                 </div>
               </div>
