@@ -158,13 +158,20 @@ button {
   }
 
   .nav-link {
-    @apply relative inline-flex items-center justify-center rounded-full px-3.5 py-2.5 text-sm font-bold transition-[background-color,color,transform,opacity,box-shadow] duration-200 ease-out focus:outline-none focus-visible:ring-4 lg:px-4;
+    @apply relative inline-flex items-center justify-center rounded-xl px-3.5 py-2.5 text-sm font-semibold transition-[background-color,color,opacity,box-shadow] duration-200 ease-out focus:outline-none focus-visible:ring-4 lg:px-4;
     color: var(--color-muted);
     --tw-ring-color: var(--color-focus);
   }
 
+  .nav-link::after {
+    content: '';
+    @apply pointer-events-none absolute bottom-1 h-0.5 w-5 rounded-full opacity-0 transition-[opacity,transform] duration-200 ease-out;
+    background: var(--color-yellow);
+    left: 50%;
+    transform: translateX(-50%) scaleX(0);
+  }
+
   .nav-link:hover {
-    transform: translateY(-1px);
     background: var(--color-blue-soft);
     color: var(--color-navy);
   }
@@ -172,7 +179,7 @@ button {
   .nav-link-active {
     background: var(--color-navy);
     color: var(--color-surface);
-    box-shadow: 0 10px 22px rgba(36, 59, 107, 0.18);
+    box-shadow: 0 6px 14px rgba(36, 59, 107, 0.16);
   }
 
   .nav-link-active:hover {
@@ -181,8 +188,17 @@ button {
   }
 
   .nav-link-active::after {
-    content: '';
-    @apply absolute bottom-1 left-1/2 h-0.5 w-5 -translate-x-1/2 rounded-full opacity-100 transition-opacity duration-200;
-    background: var(--color-yellow);
+    opacity: 1;
+    transform: translateX(-50%) scaleX(1);
+  }
+
+  #mobile-navigation .nav-link::after {
+    left: 1rem;
+    transform: scaleX(0);
+    transform-origin: left;
+  }
+
+  #mobile-navigation .nav-link-active::after {
+    transform: scaleX(1);
   }
 }

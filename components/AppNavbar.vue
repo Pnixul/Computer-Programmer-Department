@@ -1,5 +1,6 @@
 <script setup>
 const isMenuOpen = ref(false)
+const isScrolled = ref(false)
 const activeSection = ref('home')
 
 const navItems = [
@@ -13,6 +14,10 @@ const navItems = [
 
 const closeMenu = () => {
   isMenuOpen.value = false
+}
+
+const updateScrollState = () => {
+  isScrolled.value = window.scrollY > 8
 }
 
 let sectionObserver
@@ -66,29 +71,37 @@ onMounted(() => {
 
   sectionElements.forEach((section) => sectionObserver.observe(section))
   updateActiveSection()
+  updateScrollState()
   window.addEventListener('resize', updateActiveSection, { passive: true })
+  window.addEventListener('scroll', updateScrollState, { passive: true })
 })
 
 onBeforeUnmount(() => {
   sectionObserver?.disconnect()
   window.removeEventListener('resize', updateActiveSection)
+  window.removeEventListener('scroll', updateScrollState)
 })
 </script>
 
 <template>
-  <nav class="sticky top-0 z-30 w-full border-b border-[var(--color-border)] bg-white/95 shadow-[0_8px_28px_rgba(23,32,51,0.04)] backdrop-blur">
+  <nav
+    class="sticky top-0 z-30 w-full border-b border-[#E6EAF0] bg-[#FAFBFD]/95 backdrop-blur-md transition-shadow duration-300 ease-out"
+    :class="{ 'shadow-[0_8px_24px_rgba(23,32,51,0.08)]': isScrolled }"
+  >
     <div class="site-container relative flex h-[72px] items-center justify-between gap-6 py-3 md:h-20 lg:h-[88px]">
       <a
         href="#home"
-        class="flex min-w-0 items-center gap-3 rounded-xl focus:outline-none focus-visible:ring-4 focus-visible:ring-[var(--color-focus)]"
+        class="flex min-w-0 items-center gap-3.5 rounded-xl focus:outline-none focus-visible:ring-4 focus-visible:ring-[var(--color-focus)] sm:gap-4"
         @click="closeMenu"
       >
-        <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[var(--color-navy)] text-sm font-extrabold text-white shadow-[0_12px_28px_rgba(36,59,107,0.20)] lg:h-14 lg:w-14">
-          CP
-        </div>
+        <img
+          src="/images/department-logo.png"
+          alt="โลโก้แผนกช่างเขียนโปรแกรมคอมพิวเตอร์"
+          class="h-10 w-auto shrink-0 object-contain md:h-11 lg:h-12"
+        >
         <div class="min-w-0">
-          <p class="truncate text-base font-extrabold text-[var(--color-text)] sm:text-lg lg:text-xl">Computer Programmer</p>
-          <p class="truncate text-xs font-medium text-[var(--color-muted)] md:text-sm">Learn / Build / Create</p>
+          <p class="truncate text-base font-extrabold leading-tight text-[var(--color-text)] sm:text-lg lg:text-xl">Computer Programmer</p>
+          <p class="mt-0.5 truncate text-xs font-medium text-[var(--color-muted)] md:text-sm">Learn / Build / Create</p>
         </div>
       </a>
 
@@ -99,6 +112,7 @@ onBeforeUnmount(() => {
           :href="item.href"
           class="nav-link"
           :class="{ 'nav-link-active': activeSection === item.id }"
+          :aria-current="activeSection === item.id ? 'page' : undefined"
         >
           {{ item.label }}
         </a>
@@ -125,6 +139,7 @@ onBeforeUnmount(() => {
           :href="item.href"
           class="nav-link flex w-full justify-start px-4 py-3"
           :class="{ 'nav-link-active': activeSection === item.id }"
+          :aria-current="activeSection === item.id ? 'page' : undefined"
           @click="closeMenu"
         >
           {{ item.label }}

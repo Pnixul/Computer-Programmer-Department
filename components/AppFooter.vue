@@ -3,9 +3,6 @@
     <div class="site-container py-12 md:py-14 lg:py-16">
       <div class="grid gap-10 md:grid-cols-2 lg:grid-cols-[1.2fr_0.8fr_1fr_1fr] lg:gap-12">
         <section>
-          <div class="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-sm font-extrabold text-[var(--color-navy)]">
-            CP
-          </div>
           <h2 class="text-2xl font-bold leading-tight">
             Department Name Placeholder
           </h2>
