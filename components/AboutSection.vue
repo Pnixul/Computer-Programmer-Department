@@ -1,5 +1,5 @@
 <template>
-  <section id="about" class="site-section site-section-alt">
+  <section id="about" class="site-section site-section-alt pt-10 sm:pt-12 md:pt-14 lg:pt-16">
     <div class="site-container">
       <header class="section-header">
         <p class="eyebrow">เกี่ยวกับแผนก</p>

@@ -22,6 +22,15 @@
 html {
   scroll-behavior: smooth;
   scroll-padding-top: 92px;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+html::-webkit-scrollbar,
+body::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
 }
 
 body {
@@ -157,34 +166,41 @@ button {
     color: var(--color-navy);
   }
 
+  .department-navbar {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    background: #35518E;
+    box-shadow: 0 5px 18px rgba(21, 35, 67, 0.14);
+    backdrop-filter: blur(14px) saturate(135%);
+    -webkit-backdrop-filter: blur(14px) saturate(135%);
+  }
+
   .nav-link {
-    @apply relative inline-flex items-center justify-center rounded-xl px-3.5 py-2.5 text-sm font-semibold transition-[background-color,color,opacity,box-shadow] duration-200 ease-out focus:outline-none focus-visible:ring-4 lg:px-4;
-    color: var(--color-muted);
-    --tw-ring-color: var(--color-focus);
+    @apply relative inline-flex items-center justify-center rounded-xl px-3.5 py-2.5 text-sm font-semibold text-white transition-[background-color,color,opacity,box-shadow] duration-200 ease-out focus:outline-none focus-visible:ring-4 lg:px-4;
+    --tw-ring-color: rgba(244, 197, 66, 0.5);
   }
 
   .nav-link::after {
     content: '';
     @apply pointer-events-none absolute bottom-1 h-0.5 w-5 rounded-full opacity-0 transition-[opacity,transform] duration-200 ease-out;
-    background: var(--color-yellow);
+    background: #F4C542;
     left: 50%;
     transform: translateX(-50%) scaleX(0);
   }
 
   .nav-link:hover {
-    background: var(--color-blue-soft);
-    color: var(--color-navy);
+    background: rgba(255, 255, 255, 0.12);
+    color: #FFFFFF;
   }
 
   .nav-link-active {
-    background: var(--color-navy);
-    color: var(--color-surface);
-    box-shadow: 0 6px 14px rgba(36, 59, 107, 0.16);
+    background: rgba(255, 255, 255, 0.09);
+    color: #FFFFFF;
+    box-shadow: none;
   }
 
   .nav-link-active:hover {
-    background: var(--color-navy);
-    color: var(--color-surface);
+    background: rgba(255, 255, 255, 0.14);
+    color: #FFFFFF;
   }
 
   .nav-link-active::after {
