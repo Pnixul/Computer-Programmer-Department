@@ -90,7 +90,7 @@ onBeforeUnmount(() => {
         <img
           src="/images/department-logo.png"
           alt="โลโก้แผนกช่างเขียนโปรแกรมคอมพิวเตอร์"
-          class="h-10 w-10 shrink-0 rounded-full border border-white/20 object-cover shadow-[0_4px_12px_rgba(16,30,64,0.22)] md:h-11 md:w-11"
+          class="h-10 w-10 shrink-0 object-contain md:h-11 md:w-11"
         >
         <div class="min-w-0">
           <p class="truncate text-base font-extrabold leading-tight text-white sm:text-lg lg:text-xl">Computer Programmer</p>

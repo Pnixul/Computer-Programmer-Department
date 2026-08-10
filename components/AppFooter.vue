@@ -1,57 +1,99 @@
 <template>
   <footer id="contact" class="w-full bg-[var(--color-navy)] text-white">
-    <div class="site-container py-12 md:py-14 lg:py-16">
-      <div class="grid gap-10 md:grid-cols-2 lg:grid-cols-[1.2fr_0.8fr_1fr_1fr] lg:gap-12">
-        <section>
-          <h2 class="text-2xl font-bold leading-tight">
-            Department Name Placeholder
-          </h2>
-          <p class="mt-4 text-base leading-8 text-[var(--color-blue-soft)]">
-            Short description placeholder for the Computer Programmer Department identity.
+    <div class="site-container pb-0 pt-9 sm:pt-10 lg:pt-12">
+      <div class="grid gap-8 md:grid-cols-2 md:gap-x-10 md:gap-y-9 lg:grid-cols-[1.25fr_0.75fr_1fr_1.2fr] lg:gap-8 xl:gap-10">
+        <section aria-labelledby="footer-department-title">
+          <div class="flex items-center gap-3.5">
+            <img
+              src="/images/department-logo.png"
+              alt="โลโก้แผนกคอมพิวเตอร์โปรแกรมเมอร์"
+              class="h-14 w-14 shrink-0 object-contain"
+            >
+            <h2 id="footer-department-title" class="text-xl font-extrabold leading-tight sm:text-2xl">
+              แผนกคอมพิวเตอร์โปรแกรมเมอร์
+            </h2>
+          </div>
+          <p class="mt-4 max-w-sm text-sm leading-6 text-[var(--color-blue-soft)]/80">
+            วิทยาลัยเทคนิคนครพนม
           </p>
         </section>
 
-        <nav aria-label="Footer quick links">
-          <h2 class="text-lg font-bold">Quick Links Placeholder</h2>
-          <ul class="mt-5 space-y-3 text-base text-[var(--color-blue-soft)]">
-            <li><a class="hover:text-white focus:outline-none focus-visible:ring-4 focus-visible:ring-[var(--color-focus)]" href="#home">Home</a></li>
-            <li><a class="hover:text-white focus:outline-none focus-visible:ring-4 focus-visible:ring-[var(--color-focus)]" href="#about">About</a></li>
-            <li><a class="hover:text-white focus:outline-none focus-visible:ring-4 focus-visible:ring-[var(--color-focus)]" href="#curriculum">Learning</a></li>
-            <li><a class="hover:text-white focus:outline-none focus-visible:ring-4 focus-visible:ring-[var(--color-focus)]" href="#projects">Student Showcase</a></li>
-            <li><a class="hover:text-white focus:outline-none focus-visible:ring-4 focus-visible:ring-[var(--color-focus)]" href="#internship">Internship Experience</a></li>
-            <li><a class="hover:text-white focus:outline-none focus-visible:ring-4 focus-visible:ring-[var(--color-focus)]" href="#future">Future Path</a></li>
-            <li><a class="hover:text-white focus:outline-none focus-visible:ring-4 focus-visible:ring-[var(--color-focus)]" href="#faq">FAQ</a></li>
+        <nav aria-labelledby="footer-links-title">
+          <h2 id="footer-links-title" class="text-base font-bold sm:text-lg">Quick Links</h2>
+          <ul class="mt-4 space-y-2.5 text-sm text-[var(--color-blue-soft)]/80 sm:text-base">
+            <li>
+              <a class="inline-flex rounded focus:outline-none focus-visible:ring-4 focus-visible:ring-[var(--color-focus)] hover:text-white" href="#about">เกี่ยวกับแผนก</a>
+            </li>
+            <li>
+              <a class="inline-flex rounded focus:outline-none focus-visible:ring-4 focus-visible:ring-[var(--color-focus)] hover:text-white" href="#curriculum">การเรียนการสอน</a>
+            </li>
+            <li>
+              <a class="inline-flex rounded focus:outline-none focus-visible:ring-4 focus-visible:ring-[var(--color-focus)] hover:text-white" href="#projects">ผลงานนักศึกษา</a>
+            </li>
+            <li>
+              <a class="inline-flex rounded focus:outline-none focus-visible:ring-4 focus-visible:ring-[var(--color-focus)] hover:text-white" href="#faq">FAQ</a>
+            </li>
           </ul>
         </nav>
 
-        <section>
-          <h2 class="text-lg font-bold">Contact Information Placeholder</h2>
-          <ul class="mt-5 space-y-4 text-base leading-7 text-[var(--color-blue-soft)]">
-            <li>Address Placeholder</li>
-            <li>Phone Number Placeholder</li>
-            <li>Email Placeholder</li>
-            <li>Social Media Placeholder</li>
+        <section aria-labelledby="footer-contact-title">
+          <h2 id="footer-contact-title" class="text-base font-bold sm:text-lg">Contact</h2>
+          <ul class="mt-4 space-y-3.5 text-sm leading-6">
+            <li>
+              <p class="font-semibold text-white">ที่อยู่</p>
+              <p class="mt-0.5 text-[var(--color-blue-soft)]/80">
+                270 ถนนเฟื่องนคร ตำบลในเมือง อำเภอเมืองนครพนม จังหวัดนครพนม 48000
+              </p>
+            </li>
+            <li>
+              <a
+                class="inline-flex rounded font-semibold text-[var(--color-blue-soft)]/80 focus:outline-none focus-visible:ring-4 focus-visible:ring-[var(--color-focus)] hover:text-white"
+                href="https://www.facebook.com/profile.php?id=61572281923163"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Facebook แผนก
+              </a>
+            </li>
+            <li>
+              <a
+                class="inline-flex rounded font-semibold text-[var(--color-blue-soft)]/80 focus:outline-none focus-visible:ring-4 focus-visible:ring-[var(--color-focus)] hover:text-white"
+                href="https://www.facebook.com/nkptechs"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Facebook วิทยาลัย
+              </a>
+            </li>
           </ul>
         </section>
 
-        <section>
-          <h2 class="text-lg font-bold">Location Placeholder</h2>
-          <div class="mt-5 flex aspect-[4/3] w-full items-center justify-center rounded-2xl border border-white/20 bg-white/10 p-6">
-            <p class="text-center text-base font-semibold text-[var(--color-blue-soft)]">
-              Map Placeholder
-            </p>
+        <section aria-labelledby="footer-location-title">
+          <h2 id="footer-location-title" class="text-base font-bold sm:text-lg">Location</h2>
+          <div class="mt-4 min-h-52 w-full overflow-hidden rounded-2xl border border-white/20 bg-white/10 sm:min-h-56">
+            <iframe
+              class="pointer-events-auto block h-52 w-full border-0 sm:h-56"
+              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d58060.016014999106!2d104.70236778259275!3d17.40150685379526!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x313c093143cfb089%3A0x243098d859cf4a5e!2sNakhon%20Phanom%20Technical%20College!5e1!3m2!1sen!2sth!4v1786379810753!5m2!1sen!2sth"
+              title="แผนที่วิทยาลัยเทคนิคนครพนม"
+              loading="lazy"
+              referrerpolicy="strict-origin-when-cross-origin"
+              allowfullscreen
+            ></iframe>
           </div>
+          <a
+            class="mt-3 inline-flex rounded text-sm font-semibold text-[var(--color-blue-soft)]/80 focus:outline-none focus-visible:ring-4 focus-visible:ring-[var(--color-focus)] hover:text-white"
+            href="https://maps.app.goo.gl/4TK4ahCbaZwyQstCA"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="เปิดวิทยาลัยเทคนิคนครพนมใน Google Maps"
+          >
+            เปิดใน Google Maps
+          </a>
         </section>
       </div>
 
-      <div class="mt-10 flex flex-col items-center justify-between gap-5 border-t border-white/20 pt-7 text-center text-sm text-[var(--color-blue-soft)] md:mt-12 lg:flex-row lg:text-left">
-        <p>Copyright Placeholder</p>
-        <nav aria-label="Footer secondary links">
-          <ul class="flex flex-wrap justify-center gap-5">
-            <li><a class="hover:text-white focus:outline-none focus-visible:ring-4 focus-visible:ring-[var(--color-focus)]" href="#">Privacy Placeholder</a></li>
-            <li><a class="hover:text-white focus:outline-none focus-visible:ring-4 focus-visible:ring-[var(--color-focus)]" href="#">Terms Placeholder</a></li>
-          </ul>
-        </nav>
+      <div class="mt-8 border-t border-white/15 py-3.5 text-center text-sm text-[var(--color-blue-soft)]/70 md:mt-9 md:text-left">
+        <p>© 2026 แผนกคอมพิวเตอร์โปรแกรมเมอร์ · วิทยาลัยเทคนิคนครพนม</p>
       </div>
     </div>
   </footer>
