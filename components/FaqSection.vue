@@ -74,7 +74,7 @@ const toggleItem = (index) => {
 </script>
 
 <template>
-  <section id="faq" class="site-section">
+  <section id="faq" class="site-section pt-10 sm:pt-12 md:pt-16 lg:pt-20">
     <div class="site-container">
       <div class="mx-auto max-w-[1080px]">
         <header class="section-header mx-auto text-center">
