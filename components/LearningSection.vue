@@ -1,90 +1,333 @@
+<script setup>
+const learningItems = [
+  {
+    number: '01',
+    title: 'พื้นฐานการพัฒนาเว็บไซต์',
+    description: 'เรียนรู้พื้นฐานการสร้างและพัฒนาเว็บไซต์ ตั้งแต่การวางโครงสร้าง การออกแบบหน้าเว็บ ไปจนถึงการเพิ่มการโต้ตอบ พร้อมฝึกสร้างเว็บไซต์จากโจทย์และโปรเจกต์ที่ได้รับ',
+    visual: 'Learning Visual 01',
+    iconPaths: [
+      'M5 4h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z',
+      'M3 8h18',
+      'M7 6h.01',
+    ],
+  },
+  {
+    number: '02',
+    title: 'การเขียนโปรแกรมและการแก้ปัญหา',
+    description: 'ฝึกพื้นฐานการเขียนโปรแกรม การคิดอย่างเป็นขั้นตอน และการแก้ปัญหาด้วยกระบวนการทางโปรแกรม เพื่อนำแนวคิดไปประยุกต์ใช้กับการพัฒนาโปรแกรมและงานด้านต่าง ๆ',
+    visual: 'Learning Visual 02',
+    iconPaths: [
+      'M8 3H7a2 2 0 0 0-2 2v5a2 2 0 0 1-2 2 2 2 0 0 1 2 2v5a2 2 0 0 0 2 2h1',
+      'M16 3h1a2 2 0 0 1 2 2v5a2 2 0 0 0 2 2 2 2 0 0 0-2 2v5a2 2 0 0 1-2 2h-1',
+    ],
+  },
+  {
+    number: '03',
+    title: 'การออกแบบและพัฒนาซอฟต์แวร์',
+    description: 'เรียนรู้กระบวนการพัฒนาซอฟต์แวร์ ตั้งแต่การวิเคราะห์ความต้องการ การออกแบบระบบ ไปจนถึงการพัฒนาและทดสอบ เพื่อฝึกการทำงานอย่างเป็นขั้นตอนและเป็นระบบ',
+    visual: 'Learning Visual 03',
+    iconPaths: [
+      'm12 2 9 5-9 5-9-5 9-5Z',
+      'm3 12 9 5 9-5',
+      'm3 17 9 5 9-5',
+    ],
+  },
+  {
+    number: '04',
+    title: 'ฐานข้อมูลและระบบเบื้องหลัง',
+    description: 'เรียนรู้พื้นฐานการจัดเก็บและจัดการข้อมูล รวมถึงแนวคิดการทำงานของระบบเบื้องหลังเว็บไซต์ เพื่อเข้าใจการเชื่อมโยงข้อมูลและการทำงานร่วมกันของส่วนต่าง ๆ ภายในระบบ',
+    visual: 'Learning Visual 04',
+    iconPaths: [
+      'M20 6c0 1.93-3.58 3.5-8 3.5S4 7.93 4 6s3.58-3.5 8-3.5 8 1.57 8 3.5Z',
+      'M4 6v6c0 1.93 3.58 3.5 8 3.5s8-1.57 8-3.5V6',
+      'M4 12v6c0 1.93 3.58 3.5 8 3.5s8-1.57 8-3.5v-6',
+    ],
+  },
+  {
+    number: '05',
+    title: 'การประยุกต์ใช้และโปรเจกต์',
+    description: 'นำความรู้และทักษะจากการเรียนมาประยุกต์ใช้ผ่านการทำโปรเจกต์ ฝึกวางแผน แก้ปัญหา และพัฒนาผลงานจากโจทย์ที่ได้รับ เพื่อเตรียมความพร้อมสำหรับการเรียนรู้และการทำงานจริง',
+    visual: 'Learning Visual 05',
+    iconPaths: [
+      'M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z',
+      'm9 12-2 2 2 2',
+      'm15 12 2 2-2 2',
+    ],
+  },
+]
+
+const learningLayout = ref(null)
+const learningCardStage = ref(null)
+const activeIndex = ref(0)
+const cardPosition = ref(0)
+const cardStageHeight = ref(400)
+const cardHeights = ref([])
+const endHoldViewportRatio = 0.5
+
+let animationFrameId
+let desktopMediaQuery
+let learningCardElements = []
+
+const clamp = (value, minimum, maximum) => Math.min(Math.max(value, minimum), maximum)
+
+const updateLearningProgress = () => {
+  animationFrameId = undefined
+
+  if (!desktopMediaQuery?.matches || !learningLayout.value || !learningCardStage.value) {
+    cardPosition.value = 0
+    activeIndex.value = 0
+    return
+  }
+
+  const stickyTop = Number.parseFloat(window.getComputedStyle(learningCardStage.value).top) || 112
+  const layoutRect = learningLayout.value.getBoundingClientRect()
+  const scrollDistance = Math.max(1, layoutRect.height - learningCardStage.value.offsetHeight)
+  const endHoldDistance = window.innerHeight * endHoldViewportRatio
+  const cardTransitionDistance = Math.max(1, scrollDistance - endHoldDistance)
+  const progress = clamp((stickyTop - layoutRect.top) / cardTransitionDistance, 0, 1)
+  const nextPosition = progress * (learningItems.length - 1)
+  const nextStageHeight = learningCardStage.value.offsetHeight
+  const nextCardHeights = learningCardElements.map(element => element?.offsetHeight || 220)
+
+  if (cardStageHeight.value !== nextStageHeight) {
+    cardStageHeight.value = nextStageHeight
+  }
+
+  if (nextCardHeights.some((height, index) => height !== cardHeights.value[index])) {
+    cardHeights.value = nextCardHeights
+  }
+
+  cardPosition.value = nextPosition
+  activeIndex.value = Math.round(nextPosition)
+}
+
+const requestLearningProgressUpdate = () => {
+  if (animationFrameId !== undefined) return
+  animationFrameId = window.requestAnimationFrame(updateLearningProgress)
+}
+
+const getCardStyle = (index) => {
+  const offset = index - cardPosition.value
+  const distance = Math.abs(offset)
+  const cardHeight = cardHeights.value[index] || 220
+  const previewRatio = 0.15
+  const cardTravel = (cardStageHeight.value / 2) + (cardHeight * (0.5 - previewRatio))
+  const opacity = distance <= 1
+    ? 1 - (distance * 0.28)
+    : 0.72 * clamp(1 - ((distance - 1) / 0.45), 0, 1)
+
+  return {
+    '--learning-card-y': `${offset * cardTravel}px`,
+    '--learning-card-opacity': opacity.toFixed(3),
+    '--learning-card-scale': (1 - (Math.min(distance, 1) * 0.025)).toFixed(3),
+    '--learning-card-z': String(Math.max(1, 10 - Math.round(distance * 3))),
+  }
+}
+
+const setLearningCardRef = (element, index) => {
+  if (element) learningCardElements[index] = element
+}
+
+const getCardState = (index) => {
+  if (index === activeIndex.value) return 'active'
+  if (index === activeIndex.value - 1) return 'previous'
+  if (index === activeIndex.value + 1) return 'next'
+  return 'hidden'
+}
+
+onMounted(() => {
+  desktopMediaQuery = window.matchMedia('(min-width: 768px)')
+  window.addEventListener('scroll', requestLearningProgressUpdate, { passive: true })
+  window.addEventListener('resize', requestLearningProgressUpdate, { passive: true })
+  desktopMediaQuery.addEventListener('change', requestLearningProgressUpdate)
+  requestLearningProgressUpdate()
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('scroll', requestLearningProgressUpdate)
+  window.removeEventListener('resize', requestLearningProgressUpdate)
+  desktopMediaQuery?.removeEventListener('change', requestLearningProgressUpdate)
+
+  if (animationFrameId !== undefined) {
+    window.cancelAnimationFrame(animationFrameId)
+  }
+})
+</script>
+
 <template>
   <section id="curriculum" class="site-section">
     <div class="site-container">
       <header class="section-header">
-        <p class="eyebrow">Section Label Placeholder</p>
+        <p class="eyebrow">การเรียนการสอน</p>
         <h2 class="section-title">
-          Learning Heading Placeholder
+          เรียนรู้ผ่านการลงมือทำ
         </h2>
         <p class="body-copy mt-5 max-w-3xl">
-          Short paragraph placeholder for introducing the learning experiences students may explore after joining the department.
+          เรียนรู้ตั้งแต่พื้นฐานการเขียนโปรแกรม การพัฒนาเว็บไซต์ ไปจนถึงการสร้างโปรเจกต์จริง เพื่อฝึกทักษะการคิด การแก้ปัญหา และเตรียมความพร้อมสำหรับการทำงาน
         </p>
       </header>
 
-      <div class="grid items-start gap-10 md:grid-cols-[42fr_58fr] lg:gap-14 xl:gap-16">
-        <div class="media-placeholder md:sticky md:top-28">
-          <p class="media-placeholder-text">
-            Learning Visual Placeholder
-          </p>
+      <div
+        ref="learningLayout"
+        class="learning-scroll-layout grid gap-10 md:grid-cols-[42fr_58fr] lg:grid-cols-[45fr_55fr] lg:gap-14 xl:gap-16"
+      >
+        <div
+          class="learning-visual-column static md:sticky md:self-start"
+          data-learning-visual
+          :data-active-card="learningItems[activeIndex].number"
+        >
+          <div
+            class="media-placeholder md:aspect-[4/3]"
+            :aria-label="learningItems[activeIndex].visual"
+          >
+            <div
+              v-for="(item, index) in learningItems"
+              :key="item.number"
+              class="learning-visual-slide"
+              :class="{ 'learning-visual-slide-active': index === activeIndex }"
+              :aria-hidden="index === activeIndex ? undefined : 'true'"
+            >
+              <p class="media-placeholder-text">
+                {{ item.visual }}
+              </p>
+            </div>
+          </div>
         </div>
 
-        <div class="space-y-5">
-          <article class="surface-card surface-card-hover grid gap-4 sm:grid-cols-[auto_1fr_auto] sm:items-start sm:gap-5">
-            <p class="text-3xl font-extrabold leading-none text-[var(--color-navy)] md:text-4xl">01</p>
-            <div>
-              <h3 class="text-xl font-bold leading-tight text-[var(--color-text)] md:text-2xl">
-                Programming and Website Development Placeholder
-              </h3>
-              <p class="mt-3 text-base leading-8 text-[var(--color-muted)]">
-                Short description placeholder for learning how to write programs and build simple web experiences.
-              </p>
+        <div class="learning-cards-column" data-learning-cards>
+          <div ref="learningCardStage" class="learning-card-stage">
+            <div
+              v-for="(item, index) in learningItems"
+              :ref="element => setLearningCardRef(element, index)"
+              :key="item.number"
+              class="learning-card-position"
+              :style="getCardStyle(index)"
+              :data-card-state="getCardState(index)"
+              :aria-hidden="getCardState(index) === 'hidden' ? 'true' : undefined"
+            >
+              <article
+                :data-learning-card="item.number"
+                class="surface-card surface-card-hover grid gap-4 sm:grid-cols-[auto_1fr_auto] sm:items-start sm:gap-5"
+              >
+                <p class="text-3xl font-extrabold leading-none text-[var(--color-navy)] md:text-4xl">
+                  {{ item.number }}
+                </p>
+                <div>
+                  <h3 class="text-xl font-bold leading-tight text-[var(--color-text)] md:text-2xl">
+                    {{ item.title }}
+                  </h3>
+                  <p class="mt-3 text-base leading-8 text-[var(--color-muted)]">
+                    {{ item.description }}
+                  </p>
+                </div>
+                <div class="hidden h-14 w-14 items-center justify-center rounded-2xl border border-[var(--color-blue-border)] bg-[var(--color-blue-soft)] sm:flex">
+                  <svg
+                    class="h-6 w-6 text-[var(--color-blue)]"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path
+                      v-for="path in item.iconPaths"
+                      :key="path"
+                      :d="path"
+                    />
+                  </svg>
+                </div>
+              </article>
             </div>
-            <div class="hidden h-14 w-14 rounded-2xl border border-[var(--color-blue-border)] bg-[var(--color-blue-soft)] sm:block"></div>
-          </article>
-
-          <article class="surface-card surface-card-hover grid gap-4 sm:grid-cols-[auto_1fr_auto] sm:items-start sm:gap-5">
-            <p class="text-3xl font-extrabold leading-none text-[var(--color-navy)] md:text-4xl">02</p>
-            <div>
-              <h3 class="text-xl font-bold leading-tight text-[var(--color-text)] md:text-2xl">
-                Computer Hardware and Operating Systems Placeholder
-              </h3>
-              <p class="mt-3 text-base leading-8 text-[var(--color-muted)]">
-                Short description placeholder for exploring computer parts, setup, maintenance, and operating system basics.
-              </p>
-            </div>
-            <div class="hidden h-14 w-14 rounded-2xl border border-[var(--color-blue-border)] bg-[var(--color-blue-soft)] sm:block"></div>
-          </article>
-
-          <article class="surface-card surface-card-hover grid gap-4 sm:grid-cols-[auto_1fr_auto] sm:items-start sm:gap-5">
-            <p class="text-3xl font-extrabold leading-none text-[var(--color-navy)] md:text-4xl">03</p>
-            <div>
-              <h3 class="text-xl font-bold leading-tight text-[var(--color-text)] md:text-2xl">
-                Networking and LAN Setup Placeholder
-              </h3>
-              <p class="mt-3 text-base leading-8 text-[var(--color-muted)]">
-                Short description placeholder for trying network connections, local area setup, and basic troubleshooting.
-              </p>
-            </div>
-            <div class="hidden h-14 w-14 rounded-2xl border border-[var(--color-blue-border)] bg-[var(--color-blue-soft)] sm:block"></div>
-          </article>
-
-          <article class="surface-card surface-card-hover grid gap-4 sm:grid-cols-[auto_1fr_auto] sm:items-start sm:gap-5">
-            <p class="text-3xl font-extrabold leading-none text-[var(--color-navy)] md:text-4xl">04</p>
-            <div>
-              <h3 class="text-xl font-bold leading-tight text-[var(--color-text)] md:text-2xl">
-                Databases and Data Management Placeholder
-              </h3>
-              <p class="mt-3 text-base leading-8 text-[var(--color-muted)]">
-                Short description placeholder for organizing information, working with records, and understanding data use.
-              </p>
-            </div>
-            <div class="hidden h-14 w-14 rounded-2xl border border-[var(--color-blue-border)] bg-[var(--color-blue-soft)] sm:block"></div>
-          </article>
-
-          <article class="surface-card surface-card-hover grid gap-4 sm:grid-cols-[auto_1fr_auto] sm:items-start sm:gap-5">
-            <p class="text-3xl font-extrabold leading-none text-[var(--color-navy)] md:text-4xl">05</p>
-            <div>
-              <h3 class="text-xl font-bold leading-tight text-[var(--color-text)] md:text-2xl">
-                Team Projects and Presentations Placeholder
-              </h3>
-              <p class="mt-3 text-base leading-8 text-[var(--color-muted)]">
-                Short description placeholder for practicing teamwork, project planning, communication, and presenting work.
-              </p>
-            </div>
-            <div class="hidden h-14 w-14 rounded-2xl border border-[var(--color-blue-border)] bg-[var(--color-blue-soft)] sm:block"></div>
-          </article>
+          </div>
         </div>
       </div>
     </div>
   </section>
 </template>
+
+<style scoped>
+.learning-card-stage {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.learning-card-position {
+  position: static;
+}
+
+.learning-visual-slide {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(0.35rem) scale(0.99);
+  transition: opacity 260ms ease-out, transform 260ms ease-out;
+}
+
+.learning-visual-slide-active {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+@media (min-width: 768px) {
+  .learning-scroll-layout {
+    --learning-stage-half: clamp(10rem, 23vh, 14rem);
+    --learning-stage-height: clamp(20rem, 46vh, 28rem);
+    --learning-sticky-top: max(7.5rem, calc(50vh - var(--learning-stage-half)));
+    height: 300vh;
+  }
+
+  .learning-visual-column {
+    top: var(--learning-sticky-top);
+    display: flex;
+    height: var(--learning-stage-height);
+    align-items: center;
+  }
+
+  .learning-cards-column {
+    height: 100%;
+    min-width: 0;
+  }
+
+  .learning-card-stage {
+    position: sticky;
+    top: var(--learning-sticky-top);
+    display: block;
+    height: var(--learning-stage-height);
+    overflow: hidden;
+  }
+
+  .learning-card-position {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    z-index: var(--learning-card-z);
+    width: 100%;
+    opacity: var(--learning-card-opacity);
+    pointer-events: none;
+    transform: translate3d(0, calc(-50% + var(--learning-card-y)), 0) scale(var(--learning-card-scale));
+    transform-origin: center;
+    transition: opacity 180ms ease-out, transform 90ms linear;
+    will-change: opacity, transform;
+  }
+
+  .learning-card-position[data-card-state='active'] {
+    pointer-events: auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .learning-card-position,
+  .learning-visual-slide {
+    transition: none;
+  }
+}
+</style>
