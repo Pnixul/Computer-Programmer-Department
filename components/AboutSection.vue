@@ -7,7 +7,7 @@
           รู้จักแผนกคอมพิวเตอร์โปรแกรมเมอร์
         </h2>
         <p class="body-copy mt-4 max-w-3xl">
-          เรียนรู้การเขียนโปรแกรมและพัฒนาซอฟต์แวร์ผ่านการลงมือทำจริง ตั้งแต่พื้นฐานไปจนถึงการสร้างโปรเจกต์ พร้อมพัฒนาทักษะที่จำเป็นสำหรับการศึกษาต่อและการทำงานในสายเทคโนโลยี
+          เรียนรู้ทั้งการเขียนโปรแกรม การพัฒนาเว็บไซต์ ฐานข้อมูล ระบบคอมพิวเตอร์ และเครือข่าย พร้อมฝึกทักษะผ่านการลงมือทำและโปรเจกต์ระหว่างเรียน
         </p>
       </header>
 
@@ -23,23 +23,23 @@
             <div class="accent-icon rounded-full" aria-hidden="true">01</div>
             <div>
               <h3 class="text-lg font-bold text-[var(--color-text)]">เรียนผ่านการลงมือทำ</h3>
-              <p class="mt-1 text-base leading-7 text-[var(--color-muted)]">สร้างเว็บไซต์ แอปพลิเคชัน และโปรเจกต์จริง</p>
+              <p class="mt-1 text-base leading-7 text-[var(--color-muted)]">ฝึกจากงานและโปรเจกต์ระหว่างเรียน เพื่อให้ได้ลองนำสิ่งที่เรียนมาใช้จริง</p>
             </div>
           </li>
 
           <li class="flex items-center gap-4 rounded-2xl border border-[var(--color-border)] bg-white px-5 py-4 sm:px-6 sm:py-5">
             <div class="accent-icon rounded-full" aria-hidden="true">02</div>
             <div>
-              <h3 class="text-lg font-bold text-[var(--color-text)]">ฝึกงานกับบริษัท</h3>
-              <p class="mt-1 text-base leading-7 text-[var(--color-muted)]">ได้เรียนรู้การทำงานร่วมกับองค์กรและทีมพัฒนา</p>
+              <h3 class="text-lg font-bold text-[var(--color-text)]">ได้เรียนรู้จากการฝึกงาน</h3>
+              <p class="mt-1 text-base leading-7 text-[var(--color-muted)]">ในชั้นปีสุดท้าย นักเรียนสามารถเลือกออกฝึกงาน เพื่อเรียนรู้การทำงานและเก็บประสบการณ์จากสถานประกอบการ</p>
             </div>
           </li>
 
           <li class="flex items-center gap-4 rounded-2xl border border-[var(--color-border)] bg-white px-5 py-4 sm:px-6 sm:py-5">
             <div class="accent-icon rounded-full" aria-hidden="true">03</div>
             <div>
-              <h3 class="text-lg font-bold text-[var(--color-text)]">พัฒนาสู่สายอาชีพ</h3>
-              <p class="mt-1 text-base leading-7 text-[var(--color-muted)]">เตรียมความพร้อมสำหรับการศึกษาต่อและการทำงาน</p>
+              <h3 class="text-lg font-bold text-[var(--color-text)]">ไม่มีพื้นฐานก็เริ่มได้</h3>
+              <p class="mt-1 text-base leading-7 text-[var(--color-muted)]">ไม่จำเป็นต้องเขียนโปรแกรมเป็นมาก่อน หากสนใจคอมพิวเตอร์และพร้อมเรียนรู้ ก็สามารถเริ่มไปพร้อมกันได้</p>
             </div>
           </li>
         </ul>

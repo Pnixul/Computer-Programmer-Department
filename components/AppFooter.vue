@@ -73,7 +73,7 @@
           <div class="mt-4 min-h-52 w-full overflow-hidden rounded-2xl border border-white/20 bg-white/10 sm:min-h-56">
             <iframe
               class="pointer-events-auto block h-52 w-full border-0 sm:h-56"
-              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d58060.016014999106!2d104.70236778259275!3d17.40150685379526!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x313c093143cfb089%3A0x243098d859cf4a5e!2sNakhon%20Phanom%20Technical%20College!5e1!3m2!1sen!2sth!4v1786379810753!5m2!1sen!2sth"
+              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d58060.016014999106!2d104.70236778259275!3d17.40150685379526!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x313c093143cfb089%3A0x243098d859cf4a5e!2sNakhon%20Phanom%20Technical%20College!5e0!3m2!1sen!2sth!4v1786379810753!5m2!1sen!2sth"
               title="แผนที่วิทยาลัยเทคนิคนครพนม"
               loading="lazy"
               referrerpolicy="strict-origin-when-cross-origin"
