@@ -3,6 +3,6 @@
     <NuxtLayout>
       <NuxtPage />
     </NuxtLayout>
-    <AppScrollIndicator />
+    <LayoutAppScrollIndicator />
   </div>
 </template>

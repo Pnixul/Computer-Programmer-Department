@@ -16,7 +16,7 @@ The Internship section has been successfully implemented with the hybrid UX/UI d
 - Updated wireframe flows to reflect 3-story structure
 - Removed "View all" CTA risk mitigation (no longer applicable)
 
-### 2. **components/InternshipSection.vue** (Completely Rewritten)
+### 2. **components/home/InternshipSection.vue** (Completely Rewritten)
 - Replaced generic company logo grid with editorial storytelling layout
 - Implemented new structure with:
   - Section header (eyebrow + title + context in Thai)
