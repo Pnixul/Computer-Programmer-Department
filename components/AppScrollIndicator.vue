@@ -5,6 +5,7 @@ const isDragging = ref(false)
 const thumbHeight = ref(0)
 const thumbOffset = ref(0)
 const thumbElement = ref(null)
+const { scrollTo } = useSmoothScroll()
 
 const thumbStyle = computed(() => ({
   height: `${thumbHeight.value}px`,
@@ -123,7 +124,7 @@ const handlePointerMove = (event) => {
   const scrollDelta = (pointerDelta / dragMaxThumbTravel) * dragMaxScroll
   const nextScrollTop = Math.min(dragMaxScroll, Math.max(0, dragStartScrollTop + scrollDelta))
 
-  window.scrollTo({ top: nextScrollTop, behavior: 'instant' })
+  scrollTo(nextScrollTop, { immediate: true, updateHash: false })
   event.preventDefault()
 }
 

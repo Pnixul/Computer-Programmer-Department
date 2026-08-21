@@ -1,3 +1,7 @@
+<script setup>
+const { handleAnchorClick } = useSmoothScroll()
+</script>
+
 <template>
   <footer id="contact" class="w-full bg-[var(--color-navy)] text-white">
     <div class="site-container pb-0 pt-9 sm:pt-10 lg:pt-12">
@@ -22,16 +26,16 @@
           <h2 id="footer-links-title" class="text-base font-bold sm:text-lg">Quick Links</h2>
           <ul class="mt-4 space-y-2.5 text-sm text-[var(--color-blue-soft)]/80 sm:text-base">
             <li>
-              <a class="inline-flex rounded focus:outline-none focus-visible:ring-4 focus-visible:ring-[var(--color-focus)] hover:text-white" href="#about">เกี่ยวกับแผนก</a>
+              <a class="inline-flex rounded focus:outline-none focus-visible:ring-4 focus-visible:ring-[var(--color-focus)] hover:text-white" href="#about" @click="handleAnchorClick($event, '#about')">เกี่ยวกับแผนก</a>
             </li>
             <li>
-              <a class="inline-flex rounded focus:outline-none focus-visible:ring-4 focus-visible:ring-[var(--color-focus)] hover:text-white" href="#curriculum">การเรียนการสอน</a>
+              <a class="inline-flex rounded focus:outline-none focus-visible:ring-4 focus-visible:ring-[var(--color-focus)] hover:text-white" href="#curriculum" @click="handleAnchorClick($event, '#curriculum')">การเรียนการสอน</a>
             </li>
             <li>
-              <a class="inline-flex rounded focus:outline-none focus-visible:ring-4 focus-visible:ring-[var(--color-focus)] hover:text-white" href="#projects">ผลงานนักศึกษา</a>
+              <a class="inline-flex rounded focus:outline-none focus-visible:ring-4 focus-visible:ring-[var(--color-focus)] hover:text-white" href="#projects" @click="handleAnchorClick($event, '#projects')">ผลงานนักศึกษา</a>
             </li>
             <li>
-              <a class="inline-flex rounded focus:outline-none focus-visible:ring-4 focus-visible:ring-[var(--color-focus)] hover:text-white" href="#faq">FAQ</a>
+              <a class="inline-flex rounded focus:outline-none focus-visible:ring-4 focus-visible:ring-[var(--color-focus)] hover:text-white" href="#faq" @click="handleAnchorClick($event, '#faq')">FAQ</a>
             </li>
           </ul>
         </nav>

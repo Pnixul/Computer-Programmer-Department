@@ -17,13 +17,36 @@
   --color-blue-soft: #EEF3FB;
   --color-blue-border: #D7E1F3;
   --color-focus: rgba(234, 191, 58, 0.42);
+  --navbar-height: 4.5rem;
+  --section-scroll-gap: 1.75rem;
 }
 
 html {
   scroll-behavior: smooth;
-  scroll-padding-top: 92px;
   -ms-overflow-style: none;
   scrollbar-width: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+:where(.site-section[id], footer[id]) {
+  scroll-margin-top: calc(var(--navbar-height) + var(--section-scroll-gap));
+}
+
+@media (min-width: 768px) {
+  :root {
+    --navbar-height: 4.75rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  :root {
+    --navbar-height: 5rem;
+  }
 }
 
 html::-webkit-scrollbar,

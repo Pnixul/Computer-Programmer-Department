@@ -1,6 +1,7 @@
 <script setup>
 const isMenuOpen = ref(false)
 const activeSection = ref('home')
+const { handleAnchorClick } = useSmoothScroll()
 
 const navItems = [
   { label: 'หน้าหลัก', href: '#home', id: 'home' },
@@ -14,6 +15,11 @@ const navItems = [
 
 const closeMenu = () => {
   isMenuOpen.value = false
+}
+
+const handleNavigation = (event, target) => {
+  closeMenu()
+  handleAnchorClick(event, target)
 }
 
 let sectionObserver
@@ -85,7 +91,7 @@ onBeforeUnmount(() => {
       <a
         href="#home"
         class="flex min-w-0 items-center gap-3 rounded-xl focus:outline-none focus-visible:ring-4 focus-visible:ring-[#F4C542]/50 sm:gap-3.5"
-        @click="closeMenu"
+        @click="handleNavigation($event, '#home')"
       >
         <img
           src="/images/department-logo.png"
@@ -109,6 +115,7 @@ onBeforeUnmount(() => {
             'nav-link-contact': item.id === 'contact'
           }"
           :aria-current="activeSection === item.id ? 'page' : undefined"
+          @click="handleNavigation($event, item.href)"
         >
           {{ item.label }}
         </a>
@@ -136,7 +143,7 @@ onBeforeUnmount(() => {
           class="nav-link flex w-full justify-start px-4 py-3"
           :class="{ 'nav-link-active': activeSection === item.id }"
           :aria-current="activeSection === item.id ? 'page' : undefined"
-          @click="closeMenu"
+          @click="handleNavigation($event, item.href)"
         >
           {{ item.label }}
         </a>

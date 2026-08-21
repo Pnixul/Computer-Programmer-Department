@@ -1,3 +1,7 @@
+<script setup>
+const { handleAnchorClick } = useSmoothScroll()
+</script>
+
 <template>
   <main id="home" class="site-section overflow-hidden">
     <div class="site-container">
@@ -18,10 +22,10 @@
           </p>
 
           <div class="mt-6 flex flex-col gap-3 sm:mt-10 sm:flex-row sm:items-center">
-            <a href="#about" class="btn-primary min-h-11 px-5 py-2.5 sm:min-h-12 sm:px-7 sm:py-3">
+            <a href="#about" class="btn-primary min-h-11 px-5 py-2.5 sm:min-h-12 sm:px-7 sm:py-3" @click="handleAnchorClick($event, '#about')">
               รู้จักแผนกของเรา
             </a>
-            <a href="#projects" class="btn-secondary min-h-11 px-5 py-2.5 sm:min-h-12 sm:px-7 sm:py-3">
+            <a href="#projects" class="btn-secondary min-h-11 px-5 py-2.5 sm:min-h-12 sm:px-7 sm:py-3" @click="handleAnchorClick($event, '#projects')">
               ดูผลงานนักศึกษา
             </a>
           </div>
