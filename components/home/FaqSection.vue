@@ -2,7 +2,7 @@
 import { faqCategories, faqItems } from '~/data/faq'
 
 const selectedCategory = ref('learning')
-const openQuestion = ref(faqItems[0].question)
+const openQuestion = ref(null)
 
 const filteredFaqItems = computed(() => {
   if (selectedCategory.value === 'all') return faqItems
@@ -24,9 +24,7 @@ const selectCategory = (categoryId) => {
   if (selectedCategory.value === categoryId) return
 
   selectedCategory.value = categoryId
-  openQuestion.value = categoryId === 'all'
-    ? faqItems[0].question
-    : faqItems.find(item => item.category === categoryId)?.question
+  openQuestion.value = null
 }
 
 const toggleItem = (question) => {
@@ -53,7 +51,7 @@ const toggleItem = (question) => {
             <button
               v-for="category in faqCategories"
               :key="category.id"
-              class="faq-category-card flex min-h-36 flex-col items-start rounded-2xl p-5 text-left sm:min-h-40"
+              class="faq-category-card flex min-h-36 flex-col items-start rounded-2xl p-5 text-left sm:min-h-40 lg:min-h-0 lg:flex-row lg:items-center lg:gap-3 lg:px-4 lg:py-3"
               :class="{ 'faq-category-card-active': selectedCategory === category.id }"
               type="button"
               :aria-pressed="selectedCategory === category.id"
@@ -77,10 +75,10 @@ const toggleItem = (question) => {
                   />
                 </svg>
               </span>
-              <span class="mt-4 text-lg font-bold leading-tight text-[var(--color-text)]">
+              <span class="faq-category-title mt-4 text-lg font-bold leading-tight text-[var(--color-text)] lg:mt-0 lg:text-base">
                 {{ category.label }}
               </span>
-              <span class="mt-1.5 text-sm leading-6 text-[var(--color-muted)]">
+              <span class="mt-1.5 text-sm leading-6 text-[var(--color-muted)] lg:hidden">
                 {{ category.description }}
               </span>
             </button>
@@ -125,7 +123,7 @@ const toggleItem = (question) => {
                 <h4>
                   <button
                     :id="`faq-question-${getQuestionIndex(item)}`"
-                    class="faq-trigger flex w-full items-center justify-between gap-4 px-4 py-5 text-left sm:gap-6 sm:px-5 sm:py-6"
+                    class="faq-trigger flex w-full items-center justify-between gap-4 px-4 py-5 text-left sm:gap-6 sm:px-5 sm:py-6 lg:py-4"
                     type="button"
                     :aria-expanded="openQuestion === item.question"
                     :aria-controls="`faq-answer-${getQuestionIndex(item)}`"
@@ -334,6 +332,66 @@ const toggleItem = (question) => {
 .faq-list-leave-to {
   opacity: 0;
   transform: translateY(-4px);
+}
+
+@media (min-width: 1024px) {
+  .faq-category-card {
+    box-shadow: none;
+  }
+
+  .faq-category-card:hover {
+    border-color: var(--color-blue-border);
+    background: var(--color-blue-soft);
+    box-shadow: none;
+    transform: none;
+  }
+
+  .faq-category-card-active,
+  .faq-category-card-active:hover {
+    border-color: var(--color-navy);
+    background: var(--color-navy);
+    box-shadow: none;
+  }
+
+  .faq-category-card-active::after {
+    display: none;
+  }
+
+  .faq-category-icon {
+    width: 2.5rem;
+    height: 2.5rem;
+    flex: 0 0 2.5rem;
+    border-radius: 0.75rem;
+  }
+
+  .faq-category-card-active .faq-category-icon {
+    border-color: rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  .faq-category-card-active .faq-category-title {
+    color: var(--color-surface);
+  }
+
+  .faq-item {
+    box-shadow: 0 2px 8px rgba(23, 32, 51, 0.035);
+  }
+
+  .faq-item:hover {
+    border-color: var(--color-blue-border);
+    box-shadow: 0 3px 10px rgba(36, 59, 107, 0.05);
+    transform: none;
+  }
+
+  .faq-item-active {
+    box-shadow: 0 4px 14px rgba(36, 59, 107, 0.055);
+  }
+
+  .faq-icon {
+    width: 2.25rem;
+    height: 2.25rem;
+    flex-basis: 2.25rem;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
