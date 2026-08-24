@@ -52,17 +52,18 @@ export const useSmoothScroll = () => {
       return false
     }
 
-    const offset = options.offset ?? getTargetOffset(resolvedTarget)
+    const offset = options.offset ?? 0
     const immediate = options.immediate ?? false
 
     if ($smoothScroll.instance) {
+      // Lenis already applies the target's CSS scroll margin.
       $smoothScroll.instance.scrollTo(resolvedTarget, { offset, immediate })
     }
     else {
       const prefersReducedMotion = window.matchMedia(REDUCED_MOTION_QUERY).matches
 
       window.scrollTo({
-        top: getNativeScrollTop(resolvedTarget, offset),
+        top: getNativeScrollTop(resolvedTarget, getTargetOffset(resolvedTarget) + offset),
         behavior: immediate || prefersReducedMotion ? 'auto' : 'smooth',
       })
     }
@@ -79,7 +80,11 @@ export const useSmoothScroll = () => {
     return true
   }
 
-  const handleAnchorClick = (event: MouseEvent, target: string) => {
+  const handleAnchorClick = (
+    event: MouseEvent,
+    target: string,
+    options: SmoothScrollOptions = {},
+  ) => {
     if (
       event.defaultPrevented
       || event.button !== 0
@@ -92,7 +97,7 @@ export const useSmoothScroll = () => {
     }
 
     event.preventDefault()
-    return scrollTo(target)
+    return scrollTo(target, options)
   }
 
   return {

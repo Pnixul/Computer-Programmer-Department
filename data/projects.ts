@@ -1,25 +1,25 @@
-export const featuredProject = {
+export const firstProject = {
   number: '01',
-  title: 'Featured Project Title Placeholder',
+  title: 'ชื่อโปรเจกต์',
   description:
-    'Short description placeholder for the highlighted student project and what visitors should understand about it.',
-  technologies: ['Technology Placeholder', 'Technology Placeholder', 'Technology Placeholder'],
+    'คำอธิบายสั้น ๆ เกี่ยวกับแนวคิด จุดประสงค์ และสิ่งที่นักเรียนได้เรียนรู้จากโปรเจกต์นี้',
+  technologies: ['ชื่อเทคโนโลยี', 'ชื่อเทคโนโลยี', 'ชื่อเทคโนโลยี'],
 }
 
 export const otherProjects = [
   {
     number: '02',
-    title: 'Project Name Placeholder',
-    meta: 'Category Placeholder / 20XX',
+    title: 'ชื่อโปรเจกต์',
+    meta: 'ประเภทโปรเจกต์ / 20XX',
   },
   {
     number: '03',
-    title: 'Project Name Placeholder',
-    meta: 'Category Placeholder / 20XX',
+    title: 'ชื่อโปรเจกต์',
+    meta: 'ประเภทโปรเจกต์ / 20XX',
   },
   {
     number: '04',
-    title: 'Project Name Placeholder',
-    meta: 'Category Placeholder / 20XX',
+    title: 'ชื่อโปรเจกต์',
+    meta: 'ประเภทโปรเจกต์ / 20XX',
   },
 ]

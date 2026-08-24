@@ -19,7 +19,11 @@ const closeMenu = () => {
 
 const handleNavigation = (event, target) => {
   closeMenu()
-  handleAnchorClick(event, target)
+  const didNavigate = handleAnchorClick(event, target, { updateHash: false })
+
+  if (didNavigate && window.location.hash) {
+    window.history.replaceState(window.history.state, '', `${window.location.pathname}${window.location.search}`)
+  }
 }
 
 let sectionObserver

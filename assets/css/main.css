@@ -33,7 +33,7 @@ html {
   }
 }
 
-:where(.site-section[id], footer[id]) {
+:where(.site-section[id], .section-scroll-anchor[id], footer[id]) {
   scroll-margin-top: calc(var(--navbar-height) + var(--section-scroll-gap));
 }
 

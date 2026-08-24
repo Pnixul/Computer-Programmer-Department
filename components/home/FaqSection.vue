@@ -33,10 +33,10 @@ const toggleItem = (question) => {
 </script>
 
 <template>
-  <section id="faq" class="site-section pt-10 sm:pt-12 md:pt-16 lg:pt-20">
-    <div class="site-container">
+  <section class="site-section pt-10 sm:pt-12 md:pt-16 lg:pt-20">
+    <div id="faq" class="site-container section-scroll-anchor">
       <div class="mx-auto max-w-[1080px]">
-        <header class="section-header mx-auto text-center">
+        <header class="faq-section-header section-header mx-auto text-center">
           <p class="eyebrow">FAQ</p>
           <h2 class="section-title">
             คำถามที่พบบ่อย
@@ -47,11 +47,11 @@ const toggleItem = (question) => {
         </header>
 
         <div role="group" aria-label="เลือกหัวข้อคำถาม">
-          <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div class="grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-4">
             <button
               v-for="category in faqCategories"
               :key="category.id"
-              class="faq-category-card flex min-h-36 flex-col items-start rounded-2xl p-5 text-left sm:min-h-40 lg:min-h-0 lg:flex-row lg:items-center lg:gap-3 lg:px-4 lg:py-3"
+              class="faq-category-card flex min-h-16 items-center gap-2.5 rounded-2xl px-2.5 py-2.5 text-left sm:min-h-40 sm:flex-col sm:items-start sm:gap-0 sm:p-5 lg:min-h-0 lg:flex-row lg:items-center lg:gap-3 lg:px-4 lg:py-3"
               :class="{ 'faq-category-card-active': selectedCategory === category.id }"
               type="button"
               :aria-pressed="selectedCategory === category.id"
@@ -75,16 +75,16 @@ const toggleItem = (question) => {
                   />
                 </svg>
               </span>
-              <span class="faq-category-title mt-4 text-lg font-bold leading-tight text-[var(--color-text)] lg:mt-0 lg:text-base">
+              <span class="faq-category-title min-w-0 text-sm font-bold leading-5 text-[var(--color-text)] sm:mt-4 sm:text-lg sm:leading-tight lg:mt-0 lg:text-base">
                 {{ category.label }}
               </span>
-              <span class="mt-1.5 text-sm leading-6 text-[var(--color-muted)] lg:hidden">
+              <span class="mt-1.5 hidden text-sm leading-6 text-[var(--color-muted)] sm:block lg:hidden">
                 {{ category.description }}
               </span>
             </button>
           </div>
 
-          <div class="mt-4 flex justify-end">
+          <div class="mt-3 flex justify-end sm:mt-4">
             <button
               class="faq-show-all inline-flex min-h-11 items-center rounded-full px-4 py-2 text-sm font-bold"
               :class="{ 'faq-show-all-active': selectedCategory === 'all' }"
@@ -99,7 +99,7 @@ const toggleItem = (question) => {
           </div>
         </div>
 
-        <div id="faq-list" class="mt-8 sm:mt-10">
+        <div id="faq-list" class="mt-5 sm:mt-10">
           <div class="mb-4 flex items-end justify-between gap-4">
             <h3 class="text-xl font-bold text-[var(--color-text)] sm:text-2xl">
               {{ selectedCategoryLabel }}
@@ -176,14 +176,13 @@ const toggleItem = (question) => {
   position: relative;
   border: 1px solid var(--color-border);
   background: var(--color-surface);
-  box-shadow: 0 8px 24px rgba(23, 32, 51, 0.045);
+  box-shadow: 0 2px 8px rgba(23, 32, 51, 0.035);
   transition: border-color 200ms ease, background-color 200ms ease, box-shadow 200ms ease, transform 200ms ease;
 }
 
 .faq-category-card:hover {
   border-color: var(--color-blue-border);
-  box-shadow: 0 12px 30px rgba(36, 59, 107, 0.09);
-  transform: translateY(-2px);
+  box-shadow: 0 3px 10px rgba(36, 59, 107, 0.05);
 }
 
 .faq-category-card:focus-visible,
@@ -195,10 +194,11 @@ const toggleItem = (question) => {
 .faq-category-card-active {
   border-color: var(--color-navy);
   background: var(--color-blue-soft);
-  box-shadow: 0 14px 34px rgba(36, 59, 107, 0.12);
+  box-shadow: 0 4px 12px rgba(36, 59, 107, 0.07);
 }
 
 .faq-category-card-active::after {
+  display: none;
   position: absolute;
   top: 1rem;
   right: 1rem;
@@ -211,12 +211,13 @@ const toggleItem = (question) => {
 
 .faq-category-icon {
   display: inline-flex;
-  width: 3rem;
-  height: 3rem;
+  width: 2.25rem;
+  height: 2.25rem;
+  flex: 0 0 2.25rem;
   align-items: center;
   justify-content: center;
   border: 1px solid var(--color-blue-border);
-  border-radius: 0.875rem;
+  border-radius: 0.75rem;
   background: var(--color-blue-soft);
   color: var(--color-blue);
   transition: border-color 200ms ease, background-color 200ms ease, color 200ms ease;
@@ -332,6 +333,38 @@ const toggleItem = (question) => {
 .faq-list-leave-to {
   opacity: 0;
   transform: translateY(-4px);
+}
+
+@media (min-width: 640px) {
+  .faq-category-card {
+    box-shadow: 0 8px 24px rgba(23, 32, 51, 0.045);
+  }
+
+  .faq-category-card:hover {
+    box-shadow: 0 12px 30px rgba(36, 59, 107, 0.09);
+    transform: translateY(-2px);
+  }
+
+  .faq-category-card-active {
+    box-shadow: 0 14px 34px rgba(36, 59, 107, 0.12);
+  }
+
+  .faq-category-card-active::after {
+    display: block;
+  }
+
+  .faq-category-icon {
+    width: 3rem;
+    height: 3rem;
+    flex-basis: 3rem;
+    border-radius: 0.875rem;
+  }
+}
+
+@media (max-width: 639px) {
+  .faq-section-header {
+    margin-bottom: 1.5rem;
+  }
 }
 
 @media (min-width: 1024px) {
