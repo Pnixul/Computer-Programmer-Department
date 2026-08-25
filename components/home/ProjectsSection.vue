@@ -20,57 +20,33 @@ const PROJECT_FOCUS_DURATION_MS = 520
 const PROJECT_OPEN_EASING = 'cubic-bezier(0.16, 1, 0.3, 1)'
 
 type ProjectInteractionPhase = 'choreographing' | 'opening' | 'focused' | 'closing'
-type ViewportMode = 'desktop' | 'tablet' | 'mobile'
-
-type ProjectWaypoint = {
-  x: number
-  y: number
-  rotation: number
+type ProjectMotionState = {
+  translateX: number
+  translateY: number
   scale: number
   opacity: number
+  revealProgress: number
+  isInViewport: boolean
 }
 
-const projectPaths: Record<ViewportMode, ProjectWaypoint[]> = {
-  desktop: [
-    { x: 0.5, y: 0.82, rotation: 0, scale: 0.7, opacity: 0 },
-    { x: 0.61, y: 0.66, rotation: -1.2, scale: 1, opacity: 1 },
-    { x: 0.25, y: 0.5, rotation: 1.5, scale: 1, opacity: 1 },
-    { x: 0.72, y: 0.3, rotation: -1.4, scale: 1, opacity: 1 },
-    { x: 0.46, y: -0.1, rotation: 0.8, scale: 0.9, opacity: 0.55 },
-    { x: 0.34, y: -0.55, rotation: 0, scale: 0.78, opacity: 0 },
-  ],
-  tablet: [
-    { x: 0.5, y: 0.82, rotation: 0, scale: 0.7, opacity: 0 },
-    { x: 0.61, y: 0.66, rotation: -1, scale: 1, opacity: 1 },
-    { x: 0.27, y: 0.5, rotation: 1.2, scale: 1, opacity: 1 },
-    { x: 0.69, y: 0.28, rotation: -1.1, scale: 1, opacity: 1 },
-    { x: 0.45, y: -0.1, rotation: 0.7, scale: 0.88, opacity: 0.55 },
-    { x: 0.36, y: -0.55, rotation: 0, scale: 0.76, opacity: 0 },
-  ],
-  mobile: [
-    { x: 0.5, y: 0.82, rotation: 0, scale: 0.72, opacity: 0 },
-    { x: 0.5, y: 0.59, rotation: -0.7, scale: 1, opacity: 1 },
-    { x: 0.42, y: 0.38, rotation: 0.8, scale: 1, opacity: 1 },
-    { x: 0.56, y: 0.25, rotation: -0.7, scale: 0.96, opacity: 0.92 },
-    { x: 0.48, y: -0.18, rotation: 0.5, scale: 0.86, opacity: 0.5 },
-    { x: 0.5, y: -0.55, rotation: 0, scale: 0.76, opacity: 0 },
-  ],
-}
+const createInitialProjectMotionState = (): ProjectMotionState => ({
+  translateX: 0,
+  translateY: 0,
+  scale: 0.86,
+  opacity: 0,
+  revealProgress: 0,
+  isInViewport: false,
+})
 
-const projectStaggers: Record<ViewportMode, number> = {
-  desktop: 1.15,
-  tablet: 1.35,
-  mobile: 1.8,
-}
+const projectMotionStates = ref<ProjectMotionState[]>(
+  projects.map(() => createInitialProjectMotionState()),
+)
 
 const scrollScene = ref<HTMLElement | null>(null)
-const stickyStage = ref<HTMLElement | null>(null)
 const stageCanvas = ref<HTMLElement | null>(null)
+const projectSheets = ref<HTMLElement | null>(null)
 const focusSurface = ref<HTMLElement | null>(null)
 const scrollProgress = ref(0)
-const stageWidth = ref(1280)
-const stageHeight = ref(720)
-const viewportMode = ref<ViewportMode>('desktop')
 const prefersReducedMotion = ref(false)
 const isScrollReady = ref(false)
 const isSceneActive = ref(false)
@@ -98,40 +74,6 @@ const smoothstep = (value: number) => {
   return progress * progress * (3 - (2 * progress))
 }
 
-const interpolate = (start: number, end: number, progress: number) => {
-  return start + ((end - start) * progress)
-}
-
-const getProjectPathState = (index: number) => {
-  const path = projectPaths[viewportMode.value]
-  const finalWaypointIndex = path.length - 1
-  const stagger = projectStaggers[viewportMode.value]
-  const timelineLength = finalWaypointIndex + ((projects.length - 1) * stagger)
-  const pathPosition = (scrollProgress.value * timelineLength) - (index * stagger)
-
-  if (pathPosition <= 0) {
-    return { ...path[0], pathPosition }
-  }
-
-  if (pathPosition >= finalWaypointIndex) {
-    return { ...path[finalWaypointIndex], pathPosition }
-  }
-
-  const waypointIndex = Math.floor(pathPosition)
-  const waypointProgress = smoothstep(pathPosition - waypointIndex)
-  const currentWaypoint = path[waypointIndex]
-  const nextWaypoint = path[waypointIndex + 1]
-
-  return {
-    x: interpolate(currentWaypoint.x, nextWaypoint.x, waypointProgress),
-    y: interpolate(currentWaypoint.y, nextWaypoint.y, waypointProgress),
-    rotation: interpolate(currentWaypoint.rotation, nextWaypoint.rotation, waypointProgress),
-    scale: interpolate(currentWaypoint.scale, nextWaypoint.scale, waypointProgress),
-    opacity: interpolate(currentWaypoint.opacity, nextWaypoint.opacity, waypointProgress),
-    pathPosition,
-  }
-}
-
 const projectIntroductionStyle = computed(() => {
   if (usesStaticPresentation.value) return undefined
 
@@ -146,34 +88,27 @@ const projectIntroductionStyle = computed(() => {
 const isProjectAvailable = (index: number) => {
   if (usesStaticPresentation.value) return true
 
-  const state = getProjectPathState(index)
-  const finalWaypointIndex = projectPaths[viewportMode.value].length - 1
-
-  return state.pathPosition > 0.55
-    && state.pathPosition < finalWaypointIndex - 0.35
-    && state.opacity > 0.48
+  const state = projectMotionStates.value[index]
+  return Boolean(state?.revealProgress >= 0.82 && state.isInViewport)
 }
 
 const getProjectSheetStyle = (index: number) => {
   if (usesStaticPresentation.value) return undefined
 
-  const state = getProjectPathState(index)
-  const translateX = state.x * stageWidth.value
-  const translateY = state.y * stageHeight.value
+  const state = projectMotionStates.value[index] ?? createInitialProjectMotionState()
   const isInteractive = isProjectAvailable(index)
     && projectInteractionPhase.value === 'choreographing'
 
   return {
-    zIndex: String(10 + Math.round(clamp(state.y, 0, 1) * 10)),
     opacity: state.opacity.toFixed(4),
     pointerEvents: isInteractive ? 'auto' : 'none',
-    transform: `translate3d(calc(-50% + ${translateX.toFixed(2)}px), calc(-50% + ${translateY.toFixed(2)}px), 0) scale(${state.scale.toFixed(4)}) rotate(${state.rotation.toFixed(3)}deg)`,
+    transform: `translate3d(${state.translateX.toFixed(2)}px, ${state.translateY.toFixed(2)}px, 0) scale(${state.scale.toFixed(4)})`,
   }
 }
 
 const isProjectHidden = (index: number) => {
   if (usesStaticPresentation.value) return false
-  return getProjectPathState(index).opacity < 0.02
+  return (projectMotionStates.value[index]?.opacity ?? 0) < 0.02
 }
 
 const getProjectItem = (index: number) => {
@@ -382,21 +317,13 @@ const closeProject = async () => {
   projectTrigger = null
 }
 
-const resolveViewportMode = (): ViewportMode => {
-  if (window.innerWidth >= 1024) return 'desktop'
-  if (window.innerWidth >= 768) return 'tablet'
-  return 'mobile'
-}
-
 const updateProjectProgress = () => {
   scrollFrameId = undefined
 
-  if (!scrollScene.value || !stickyStage.value || !stageCanvas.value) return
+  if (!scrollScene.value || !stageCanvas.value || !projectSheets.value) return
 
-  const canvasRect = stageCanvas.value.getBoundingClientRect()
-  stageWidth.value = canvasRect.width
-  stageHeight.value = canvasRect.height
-  viewportMode.value = resolveViewportMode()
+  const archive = stageCanvas.value.querySelector<HTMLElement>('.project-archive')
+  if (!archive) return
 
   if (usesStaticPresentation.value) {
     scrollProgress.value = 1
@@ -405,11 +332,51 @@ const updateProjectProgress = () => {
 
   if (projectInteractionPhase.value !== 'choreographing') return
 
-  const stickyTop = Number.parseFloat(getComputedStyle(stickyStage.value).top) || 0
   const sceneRect = scrollScene.value.getBoundingClientRect()
-  const scrollDistance = Math.max(1, sceneRect.height - stickyStage.value.offsetHeight)
+  const archiveRect = archive.getBoundingClientRect()
+  const sheetsRect = projectSheets.value.getBoundingClientRect()
+  const projectItems = Array.from(
+    projectSheets.value.querySelectorAll<HTMLElement>('.project-sheet'),
+  )
+  const viewportHeight = window.innerHeight
+  const navbarHeight = Number.parseFloat(
+    getComputedStyle(document.documentElement).getPropertyValue('--navbar-height'),
+  ) || 0
+  const scrollDistance = Math.max(1, sceneRect.height - viewportHeight + navbarHeight)
+  const revealStartOffset = clamp(viewportHeight * 0.08, 48, 88)
+  const revealDistance = clamp(viewportHeight * 0.32, 200, 340)
+  const archiveCenterX = archiveRect.left + (archiveRect.width / 2)
+  const archiveCenterY = archiveRect.top + (archiveRect.height / 2)
 
-  scrollProgress.value = clamp((stickyTop - sceneRect.top) / scrollDistance)
+  scrollProgress.value = clamp((navbarHeight - sceneRect.top) / scrollDistance)
+  projectMotionStates.value = projects.map((_, index) => {
+    const item = projectItems[index]
+
+    if (!item) return createInitialProjectMotionState()
+
+    const destinationCenterX = sheetsRect.left + item.offsetLeft + (item.offsetWidth / 2)
+    const destinationCenterY = sheetsRect.top + item.offsetTop + (item.offsetHeight / 2)
+    const rawRevealProgress = clamp(
+      (archiveCenterY + revealStartOffset - destinationCenterY) / revealDistance,
+    )
+    const revealProgress = smoothstep(rawRevealProgress)
+    const translateX = (archiveCenterX - destinationCenterX) * (1 - revealProgress)
+    const translateY = (archiveCenterY - destinationCenterY) * (1 - revealProgress)
+    const scale = 0.86 + (0.14 * revealProgress)
+    const opacity = smoothstep(rawRevealProgress / 0.3)
+    const visualCenterY = destinationCenterY + translateY
+    const visualHalfHeight = (item.offsetHeight * scale) / 2
+
+    return {
+      translateX,
+      translateY,
+      scale,
+      opacity,
+      revealProgress,
+      isInViewport: visualCenterY + visualHalfHeight > navbarHeight + 8
+        && visualCenterY - visualHalfHeight < viewportHeight - 8,
+    }
+  })
 }
 
 function requestProjectProgressUpdate(force = false) {
@@ -439,7 +406,6 @@ const handleProjectKeydown = (event: KeyboardEvent) => {
 onMounted(async () => {
   reducedMotionMedia = window.matchMedia('(prefers-reduced-motion: reduce)')
   prefersReducedMotion.value = reducedMotionMedia.matches
-  viewportMode.value = resolveViewportMode()
   isScrollReady.value = true
 
   await nextTick()
@@ -489,16 +455,15 @@ onBeforeUnmount(() => {
       class="projects-scroll-scene"
       :class="{ 'projects-scroll-scene-static': usesStaticPresentation }"
     >
-      <div ref="stickyStage" class="projects-sticky-stage">
-        <div
-          ref="stageCanvas"
-          class="projects-stage-canvas"
-          :class="{
-            'projects-stage-canvas-active': isSceneActive,
-            'projects-stage-canvas-focused': isProjectFocusActive,
-          }"
-          :data-scroll-progress="scrollProgress.toFixed(3)"
-        >
+      <div
+        ref="stageCanvas"
+        class="projects-stage-canvas"
+        :class="{
+          'projects-stage-canvas-active': isSceneActive,
+          'projects-stage-canvas-focused': isProjectFocusActive,
+        }"
+        :data-scroll-progress="scrollProgress.toFixed(3)"
+      >
           <header class="projects-header" :style="projectIntroductionStyle">
             <h2 class="section-title">ผลงานนักเรียน</h2>
             <p class="body-copy">จากการเรียนรู้ สู่การลงมือสร้างจริง</p>
@@ -516,6 +481,7 @@ onBeforeUnmount(() => {
           <div id="project-focus-surface" ref="focusSurface" class="project-focus-surface"></div>
 
           <ul
+            ref="projectSheets"
             class="project-sheets"
             :class="{ 'project-sheets-static': usesStaticPresentation }"
             aria-label="ตัวอย่างผลงานนักเรียน"
@@ -598,51 +564,54 @@ onBeforeUnmount(() => {
             </li>
           </ul>
 
-          <div class="project-archive" aria-label="คลังผลงานนักเรียน">
-            <div class="project-archive__papers" aria-hidden="true">
-              <span></span><span></span><span></span>
-            </div>
+          <div class="project-archive-layer">
+            <div class="project-archive-anchor">
+              <div class="project-archive" aria-label="คลังผลงานนักเรียน">
+                <div class="project-archive__papers" aria-hidden="true">
+                  <span></span><span></span><span></span>
+                </div>
 
-            <div class="project-archive__body">
-              <svg
-                class="project-archive__icon"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.6"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                aria-hidden="true"
-              >
-                <path d="M3.5 7.5h6l2-2h9v13h-17z" />
-                <path d="M3.5 9.5h17" />
-              </svg>
+                <div class="project-archive__body">
+                  <svg
+                    class="project-archive__icon"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.6"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path d="M3.5 7.5h6l2-2h9v13h-17z" />
+                    <path d="M3.5 9.5h17" />
+                  </svg>
 
-              <div class="project-archive__copy">
-                <h3>คลังผลงานนักเรียน</h3>
-                <p>รวมโปรเจกต์และผลงานจากการเรียนรู้</p>
+                  <div class="project-archive__copy">
+                    <h3>คลังผลงานนักเรียน</h3>
+                    <p>รวมโปรเจกต์และผลงานจากการเรียนรู้</p>
+                  </div>
+
+                  <button
+                    type="button"
+                    class="project-archive__action"
+                    aria-label="เปิดคลังผลงาน (หน้ารวมผลงานจะเปิดให้ใช้งานในอนาคต)"
+                    disabled
+                  >
+                    <span>เปิดคลังผลงาน</span>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="M5 12h14" />
+                      <path d="m13 6 6 6-6 6" />
+                    </svg>
+                  </button>
+                  <!-- Replace this disabled button with a NuxtLink to /projects when that route is available. -->
+                </div>
               </div>
 
-              <button
-                type="button"
-                class="project-archive__action"
-                aria-label="เปิดคลังผลงาน (หน้ารวมผลงานจะเปิดให้ใช้งานในอนาคต)"
-                disabled
-              >
-                <span>เปิดคลังผลงาน</span>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                  <path d="M5 12h14" />
-                  <path d="m13 6 6 6-6 6" />
-                </svg>
-              </button>
-              <!-- Replace this disabled button with a NuxtLink to /projects when that route is available. -->
+              <p v-if="!usesStaticPresentation" class="projects-scroll-hint" aria-hidden="true">
+                เลื่อนเพื่อเปิดดูผลงานทีละชิ้น
+              </p>
             </div>
           </div>
-
-          <p v-if="!usesStaticPresentation" class="projects-scroll-hint" aria-hidden="true">
-            เลื่อนเพื่อเปิดดูผลงานทีละชิ้น
-          </p>
-        </div>
       </div>
     </div>
   </section>
@@ -680,53 +649,82 @@ onBeforeUnmount(() => {
 
 .projects-scroll-scene {
   position: relative;
-  height: 430svh;
-}
-
-.projects-sticky-stage {
-  position: sticky;
-  top: var(--navbar-height);
-  height: calc(100svh - var(--navbar-height));
-  min-height: 34rem;
-  overflow: hidden;
-  border-top: 1px solid var(--color-border);
-  background: var(--color-surface);
-  isolation: isolate;
 }
 
 .projects-stage-canvas {
   position: relative;
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-}
-
-.projects-stage-canvas::before {
-  position: absolute;
-  inset: 2rem clamp(1rem, 3vw, 3rem) 1.5rem;
-  border: 1px solid rgba(215, 225, 243, 0.72);
-  border-radius: 1rem;
-  content: '';
-  pointer-events: none;
+  display: grid;
+  width: min(100%, 1280px);
+  margin: 0 auto;
+  isolation: isolate;
 }
 
 .project-sheets {
-  position: absolute;
-  inset: 0;
+  position: relative;
+  z-index: 10;
+  display: flex;
+  min-width: 0;
+  grid-area: 1 / 1;
+  flex-direction: column;
+  gap: clamp(3rem, 8svh, 5rem);
   margin: 0;
-  padding: 0;
+  padding:
+    clamp(31rem, 72svh, 42rem)
+    clamp(1.25rem, 4vw, 3rem)
+    clamp(22rem, 70svh, 40rem);
   list-style: none;
 }
 
 .project-sheet {
-  position: absolute;
-  top: 0;
-  left: 0;
+  --project-sheet-base-height: clamp(19.5rem, 42svh, 22rem);
+  --project-sheet-height-growth: clamp(2.925rem, 6.3svh, 3.3rem);
+  position: relative;
+  flex: 0 0 auto;
   width: clamp(18rem, 24vw, 21rem);
-  height: clamp(19.5rem, 42vh, 22rem);
+  height: calc(var(--project-sheet-base-height) + var(--project-sheet-height-growth));
+  margin-block-end: calc(0rem - var(--project-sheet-height-growth));
   opacity: 0;
   transform-origin: center;
   will-change: auto;
+}
+
+.project-sheet:nth-child(odd) {
+  align-self: flex-start;
+  margin-left: clamp(0rem, 5vw, 3.5rem);
+}
+
+.project-sheet:nth-child(even) {
+  align-self: flex-end;
+  margin-right: clamp(0rem, 7vw, 4.5rem);
+}
+
+.project-sheet:nth-child(3) {
+  margin-left: clamp(1rem, 9vw, 7rem);
+}
+
+.project-sheet:nth-child(4) {
+  margin-right: clamp(0.5rem, 3vw, 2rem);
+}
+
+.project-archive-layer {
+  position: relative;
+  z-index: 30;
+  min-width: 0;
+  grid-area: 1 / 1;
+  padding-top: clamp(13rem, 28svh, 16rem);
+  pointer-events: none;
+}
+
+.project-archive-anchor {
+  --project-archive-anchor-height: 14.25rem;
+  position: sticky;
+  top: max(
+    var(--navbar-height),
+    calc(100svh - var(--project-archive-anchor-height) - clamp(2.5rem, 7svh, 4.5rem))
+  );
+  width: min(22rem, calc(100% - 2rem));
+  margin: 0 auto;
+  pointer-events: none;
 }
 
 .projects-stage-canvas-active .project-sheet {
@@ -893,7 +891,7 @@ onBeforeUnmount(() => {
   min-width: 0;
   flex: 1;
   flex-direction: column;
-  padding: 1.25rem 1.4rem 1.4rem;
+  padding: 1.45rem 1.4rem 1.6rem;
 }
 
 .project-card-selected .project-card__content {
@@ -958,20 +956,35 @@ onBeforeUnmount(() => {
 }
 
 .project-archive {
+  position: relative;
+  width: 100%;
+  isolation: isolate;
+  perspective: 44rem;
+  pointer-events: auto;
+}
+
+.project-archive::before {
   position: absolute;
-  top: 82%;
-  left: 50%;
-  z-index: 30;
-  width: min(22rem, calc(100% - 2rem));
-  transform: translate3d(-50%, -50%, 0);
+  right: 0.45rem;
+  bottom: -0.45rem;
+  left: 0.45rem;
+  z-index: -1;
+  height: 3.25rem;
+  border-radius: 0 0 1rem 1rem;
+  background: rgba(23, 43, 80, 0.96);
+  box-shadow: 0 14px 28px rgba(23, 32, 51, 0.18);
+  content: '';
+  transform: perspective(44rem) rotateX(-7deg);
+  transform-origin: top center;
 }
 
 .project-archive__papers {
   position: absolute;
-  right: 1.25rem;
-  bottom: calc(100% - 1rem);
-  left: 1.25rem;
-  height: 3rem;
+  right: 1rem;
+  bottom: calc(100% - 1.2rem);
+  left: 1rem;
+  height: 3.65rem;
+  perspective: 36rem;
 }
 
 .project-archive__papers span {
@@ -979,33 +992,68 @@ onBeforeUnmount(() => {
   right: 0;
   bottom: 0;
   left: 0;
-  height: 2.4rem;
+  height: 2.65rem;
   border: 1px solid var(--color-blue-border);
-  border-radius: 0.75rem 0.75rem 0 0;
+  border-radius: 0.8rem 0.8rem 0 0;
   background: var(--color-surface);
   box-shadow: 0 5px 16px rgba(23, 32, 51, 0.06);
+  transform-origin: bottom center;
+}
+
+.project-archive__papers span::before {
+  position: absolute;
+  top: -0.6rem;
+  left: 0.8rem;
+  width: 4.5rem;
+  height: 0.65rem;
+  border: 1px solid var(--color-blue-border);
+  border-bottom: 0;
+  border-radius: 0.45rem 0.45rem 0 0;
+  background: inherit;
+  content: '';
 }
 
 .project-archive__papers span:nth-child(1) {
-  transform: translateY(-0.9rem) scaleX(0.86);
+  background: var(--color-surface);
+  transform: translateY(-1.05rem) scaleX(0.84) rotateX(-2deg);
 }
 
 .project-archive__papers span:nth-child(2) {
-  transform: translateY(-0.45rem) scaleX(0.93);
+  background: var(--color-blue-soft);
+  transform: translateY(-0.52rem) scaleX(0.92) rotateX(-1deg);
+}
+
+.project-archive__papers span:nth-child(2)::before {
+  left: 38%;
+}
+
+.project-archive__papers span:nth-child(3) {
+  transform: scaleX(0.98);
+}
+
+.project-archive__papers span:nth-child(3)::before {
+  right: 0.9rem;
+  left: auto;
 }
 
 .project-archive__body {
   position: relative;
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  gap: 0.35rem 0.85rem;
-  align-items: center;
-  min-height: 8.5rem;
+  overflow: hidden;
+  grid-template-columns: 2.1rem minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  gap: 0.8rem 0.9rem;
+  align-content: center;
+  align-items: start;
+  min-height: 12.25rem;
   border-radius: 1rem;
-  padding: 1.1rem 1.2rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 1.6rem 1.25rem 1.45rem;
   background: var(--color-navy);
   color: var(--color-surface);
-  box-shadow: 0 18px 40px rgba(36, 59, 107, 0.2);
+  box-shadow: 0 20px 40px rgba(36, 59, 107, 0.22);
+  transform: perspective(44rem) rotateX(0.75deg);
+  transform-origin: top center;
 }
 
 .project-archive__body::before {
@@ -1014,27 +1062,60 @@ onBeforeUnmount(() => {
   right: 1.25rem;
   width: 4rem;
   height: 0.25rem;
+  z-index: 3;
   background: var(--color-yellow);
   content: '';
 }
 
+.project-archive__body::after {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 0;
+  height: 42%;
+  border-top: 1px solid rgba(255, 255, 255, 0.11);
+  background: linear-gradient(
+    180deg,
+    rgba(59, 95, 168, 0.12),
+    rgba(16, 32, 63, 0.28)
+  );
+  content: '';
+  pointer-events: none;
+}
+
+.project-archive__body > * {
+  position: relative;
+  z-index: 2;
+}
+
 .project-archive__icon {
-  width: 1.75rem;
-  height: 1.75rem;
+  width: 2.1rem;
+  height: 2.1rem;
+  border: 1px solid rgba(234, 191, 58, 0.42);
+  border-radius: 0.65rem;
+  padding: 0.38rem;
+  background: rgba(234, 191, 58, 0.1);
   color: var(--color-yellow);
 }
 
+.project-archive__copy {
+  min-width: 0;
+  padding-right: 0.2rem;
+}
+
 .project-archive__copy h3 {
-  font-size: 1rem;
+  font-size: 1.0625rem;
   font-weight: 800;
-  line-height: 1.35;
+  line-height: 1.4;
+  text-wrap: balance;
 }
 
 .project-archive__copy p {
-  margin-top: 0.15rem;
+  margin-top: 0.28rem;
   color: rgba(255, 255, 255, 0.76);
   font-size: 0.75rem;
-  line-height: 1.55;
+  line-height: 1.65;
 }
 
 .project-archive__action {
@@ -1044,10 +1125,10 @@ onBeforeUnmount(() => {
   gap: 0.55rem;
   align-items: center;
   justify-content: center;
-  margin-top: 0.4rem;
+  margin-top: 0;
   border: 1px solid rgba(255, 255, 255, 0.28);
   border-radius: 0.75rem;
-  padding: 0.5rem 0.8rem;
+  padding: 0.55rem 0.85rem;
   background: var(--color-surface);
   color: var(--color-navy);
   font-size: 0.75rem;
@@ -1055,37 +1136,28 @@ onBeforeUnmount(() => {
 }
 
 .project-archive__action:disabled {
-  opacity: 0.72;
+  opacity: 0.88;
   cursor: not-allowed;
 }
 
 .project-archive__action svg {
   width: 0.95rem;
   height: 0.95rem;
+  flex: 0 0 auto;
 }
 
 .projects-scroll-hint {
-  position: absolute;
-  bottom: 1.1rem;
-  left: 50%;
-  z-index: 35;
+  width: 100%;
+  margin-top: 0.8rem;
   color: var(--color-muted);
   font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.02em;
-  transform: translateX(-50%);
+  text-align: center;
 }
 
 .projects-scroll-scene-static {
   height: auto;
-}
-
-.projects-scroll-scene-static .projects-sticky-stage {
-  position: relative;
-  top: auto;
-  height: auto;
-  min-height: 0;
-  overflow: visible;
 }
 
 .projects-scroll-scene-static .projects-stage-canvas {
@@ -1097,10 +1169,6 @@ onBeforeUnmount(() => {
   margin: 0 auto;
   overflow: visible;
   padding: 2rem clamp(1.25rem, 4vw, 3rem) 4rem;
-}
-
-.projects-scroll-scene-static .projects-stage-canvas::before {
-  display: none;
 }
 
 .projects-scroll-scene-static .projects-header {
@@ -1121,24 +1189,30 @@ onBeforeUnmount(() => {
 
 .project-sheets-static .project-sheet {
   position: relative;
-  top: auto;
-  left: auto;
   width: auto;
   height: 21rem;
+  align-self: stretch;
+  margin-right: 0;
+  margin-block-end: 0;
+  margin-left: 0;
   opacity: 1;
   transform: none;
   visibility: visible;
   will-change: auto;
 }
 
-.projects-scroll-scene-static .project-archive {
+.projects-scroll-scene-static .project-archive-layer {
+  display: contents;
+}
+
+.projects-scroll-scene-static .project-archive-anchor {
   position: relative;
   top: auto;
-  left: auto;
+  width: min(22rem, calc(100% - 2rem));
   grid-column: 1 / -1;
   justify-self: center;
   margin-top: 3rem;
-  transform: none;
+  pointer-events: auto;
 }
 
 @keyframes project-backdrop-in {
@@ -1166,15 +1240,11 @@ onBeforeUnmount(() => {
 }
 
 @media (max-width: 1023px) {
-  .projects-scroll-scene {
-    height: 370svh;
-  }
-
   .project-sheet {
+    --project-sheet-base-height: clamp(18rem, 40svh, 20rem);
+    --project-sheet-height-growth: clamp(2.7rem, 6svh, 3rem);
     width: clamp(16rem, 35vw, 18rem);
-    height: clamp(18rem, 40vh, 20rem);
   }
-
 }
 
 @media (max-width: 767px) {
@@ -1193,22 +1263,18 @@ onBeforeUnmount(() => {
     line-height: 1.6;
   }
 
-  .projects-scroll-scene {
-    height: 300svh;
-  }
-
-  .projects-sticky-stage {
-    min-height: 31rem;
-  }
-
-  .projects-stage-canvas::before {
-    inset: 1rem 0.75rem;
+  .project-sheets {
+    gap: clamp(3rem, 8svh, 4rem);
+    padding:
+      clamp(30rem, 72svh, 36rem)
+      1.25rem
+      clamp(20rem, 65svh, 32rem);
   }
 
   .project-sheet {
-    top: 0;
-    width: min(86vw, 21rem);
-    height: min(21rem, 48svh);
+    --project-sheet-base-height: min(21rem, 48svh);
+    --project-sheet-height-growth: min(3.15rem, 7.2svh);
+    width: min(82vw, 21rem);
   }
 
   .project-card-motion-selected {
@@ -1230,20 +1296,40 @@ onBeforeUnmount(() => {
     transform: none;
   }
 
-  .project-archive {
-    top: 82%;
+  .project-archive-anchor {
+    --project-archive-anchor-height: 13.25rem;
     width: min(18rem, calc(100% - 2rem));
   }
 
   .project-archive__body {
-    min-height: 7.75rem;
-    padding: 0.9rem 1rem;
+    grid-template-columns: 1.85rem minmax(0, 1fr);
+    gap: 0.65rem 0.75rem;
+    min-height: 11.25rem;
+    padding: 1.3rem 1rem 1.2rem;
+  }
+
+  .project-archive__icon {
+    width: 1.85rem;
+    height: 1.85rem;
+    padding: 0.32rem;
+  }
+
+  .project-archive__copy h3 {
+    font-size: 1rem;
+  }
+
+  .project-archive__copy p {
+    font-size: 0.72rem;
+    line-height: 1.6;
+  }
+
+  .project-archive__action {
+    min-height: 2.35rem;
+    padding: 0.5rem 0.75rem;
   }
 
   .projects-scroll-hint {
-    bottom: 0.6rem;
-    width: 100%;
-    text-align: center;
+    margin-top: 0.6rem;
   }
 
   .projects-scroll-scene-static .projects-stage-canvas {
@@ -1258,7 +1344,7 @@ onBeforeUnmount(() => {
     justify-self: center;
   }
 
-  .projects-scroll-scene-static .project-archive {
+  .projects-scroll-scene-static .project-archive-anchor {
     grid-column: auto;
     margin-top: 2.5rem;
   }
