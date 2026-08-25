@@ -1,11 +1,11 @@
 <template>
-  <AppNavbar />
+  <LayoutAppNavbar />
   <HomeHero />
-  <AboutSection />
-  <LearningSection />
-  <ProjectsSection />
-  <InternshipSection />
-  <FuturePathSection />
-  <FaqSection />
-  <AppFooter />
+  <HomeAboutSection />
+  <HomeLearningSection />
+  <HomeProjectsSection />
+  <HomeInternshipSection />
+  <HomeFuturePathSection />
+  <HomeFaqSection />
+  <LayoutAppFooter />
 </template>
