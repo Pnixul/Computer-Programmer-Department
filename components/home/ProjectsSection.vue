@@ -5,13 +5,13 @@ const projects = [
   {
     number: firstProject.number,
     title: firstProject.title,
-    meta: 'โปรเจกต์นักเรียน',
+    meta: 'โปรเจกต์ของผู้เรียน',
     description: firstProject.description,
     technologies: firstProject.technologies,
   },
   ...otherProjects.map(project => ({
     ...project,
-    description: 'รายละเอียดแนวคิดและสิ่งที่นักเรียนได้เรียนรู้จากโปรเจกต์',
+    description: 'รายละเอียดแนวคิดและสิ่งที่ผู้เรียนได้เรียนรู้จากโปรเจกต์',
     technologies: [],
   })),
 ]
@@ -465,8 +465,8 @@ onBeforeUnmount(() => {
         :data-scroll-progress="scrollProgress.toFixed(3)"
       >
           <header class="projects-header" :style="projectIntroductionStyle">
-            <h2 class="section-title">ผลงานนักเรียน</h2>
-            <p class="body-copy">จากการเรียนรู้ สู่การลงมือสร้างจริง</p>
+            <h2 class="section-title">ผลงานผู้เรียน</h2>
+            <p class="body-copy">จากการเรียนรู้สู่การลงมือสร้างจริง</p>
           </header>
 
           <button
@@ -484,7 +484,7 @@ onBeforeUnmount(() => {
             ref="projectSheets"
             class="project-sheets"
             :class="{ 'project-sheets-static': usesStaticPresentation }"
-            aria-label="ตัวอย่างผลงานนักเรียน"
+            aria-label="ตัวอย่างผลงานผู้เรียน"
             :aria-hidden="isProjectFocusActive ? 'true' : undefined"
           >
             <li
@@ -566,7 +566,7 @@ onBeforeUnmount(() => {
 
           <div class="project-archive-layer">
             <div class="project-archive-anchor">
-              <div class="project-archive" aria-label="คลังผลงานนักเรียน">
+              <div class="project-archive" aria-label="คลังผลงานผู้เรียน">
                 <div class="project-archive__papers" aria-hidden="true">
                   <span></span><span></span><span></span>
                 </div>
@@ -587,7 +587,7 @@ onBeforeUnmount(() => {
                   </svg>
 
                   <div class="project-archive__copy">
-                    <h3>คลังผลงานนักเรียน</h3>
+                    <h3>คลังผลงานผู้เรียน</h3>
                     <p>รวมโปรเจกต์และผลงานจากการเรียนรู้</p>
                   </div>
 

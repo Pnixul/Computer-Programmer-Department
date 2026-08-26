@@ -26,7 +26,7 @@ const { handleAnchorClick } = useSmoothScroll()
               รู้จักแผนกของเรา
             </a>
             <a href="#projects" class="btn-secondary min-h-11 px-5 py-2.5 sm:min-h-12 sm:px-7 sm:py-3" @click="handleAnchorClick($event, '#projects')">
-              ดูผลงานนักศึกษา
+              ดูผลงานผู้เรียน
             </a>
           </div>
         </section>
