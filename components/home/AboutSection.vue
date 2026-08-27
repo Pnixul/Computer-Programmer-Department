@@ -12,7 +12,7 @@
       </header>
 
       <div class="grid items-center gap-10 md:grid-cols-[0.92fr_1.08fr] lg:gap-14 xl:gap-16">
-        <div class="media-placeholder max-w-[560px] md:max-w-none">
+        <div class="media-placeholder hidden max-w-[560px] md:flex md:max-w-none">
           <p class="media-placeholder-text">
             พื้นที่สำหรับรูปภาพ
           </p>
@@ -23,7 +23,7 @@
             <div class="accent-icon rounded-full" aria-hidden="true">01</div>
             <div>
               <h3 class="text-lg font-bold text-[var(--color-text)]">เรียนผ่านการลงมือทำ</h3>
-              <p class="mt-1 text-base leading-7 text-[var(--color-muted)]">ฝึกจากงานและโปรเจกต์ระหว่างเรียน เพื่อให้ได้ลองนำสิ่งที่เรียนมาใช้จริง</p>
+              <p class="mt-1 text-base leading-7 text-[var(--color-muted)]">ฝึกผ่านงานและโปรเจกต์ระหว่างเรียน เพื่อนำสิ่งที่เรียนมาใช้จริง</p>
             </div>
           </li>
 
@@ -31,7 +31,7 @@
             <div class="accent-icon rounded-full" aria-hidden="true">02</div>
             <div>
               <h3 class="text-lg font-bold text-[var(--color-text)]">ได้เรียนรู้จากการฝึกงาน</h3>
-              <p class="mt-1 text-base leading-7 text-[var(--color-muted)]">ในชั้นปีสุดท้าย นักเรียนสามารถเลือกออกฝึกงาน เพื่อเรียนรู้การทำงานและเก็บประสบการณ์จากสถานประกอบการ</p>
+              <p class="mt-1 text-base leading-7 text-[var(--color-muted)]">ในชั้นปีสุดท้าย ผู้เรียนสามารถเลือกออกฝึกงานเพื่อเรียนรู้การทำงานและเก็บเกี่ยวประสบการณ์จากสถานประกอบการ</p>
             </div>
           </li>
 
@@ -39,7 +39,7 @@
             <div class="accent-icon rounded-full" aria-hidden="true">03</div>
             <div>
               <h3 class="text-lg font-bold text-[var(--color-text)]">ไม่มีพื้นฐานก็เริ่มได้</h3>
-              <p class="mt-1 text-base leading-7 text-[var(--color-muted)]">ไม่จำเป็นต้องเขียนโปรแกรมเป็นมาก่อน หากสนใจคอมพิวเตอร์และพร้อมเรียนรู้ ก็สามารถเริ่มไปพร้อมกันได้</p>
+              <p class="mt-1 text-base leading-7 text-[var(--color-muted)]">ไม่จำเป็นต้องมีพื้นฐานการเขียนโปรแกรมมาก่อน หากสนใจคอมพิวเตอร์และพร้อมเรียนรู้ ก็สามารถเริ่มไปพร้อมกันได้</p>
             </div>
           </li>
         </ul>

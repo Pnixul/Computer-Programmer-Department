@@ -13,7 +13,7 @@ import { internshipGroups } from '~/data/internships'
           <span class="block md:whitespace-nowrap">เรียนรู้จาก<wbr><span class="whitespace-nowrap">สถานประกอบการ</span></span>
         </h2>
         <p class="body-copy mt-5 max-w-3xl">
-          นักศึกษาในแผนกคอมพิวเตอร์โปรแกรมเมอร์ได้ฝึกประสบการณ์จากการทำงานจริงในสถานประกอบการต่างๆ เพื่อเรียนรู้ทั้งทักษะวิชาชีพและวัฒนาความเข้าใจของการทำงานในโลกแห่งความเป็นจริง
+          ผู้เรียนในแผนกคอมพิวเตอร์โปรแกรมเมอร์จะได้ฝึกประสบการณ์วิชาชีพผ่านการปฏิบัติงานจริงในสถานประกอบการต่าง ๆ เพื่อพัฒนาทักษะและเรียนรู้วัฒนธรรมการทำงาน
         </p>
       </header>
 
@@ -24,13 +24,13 @@ import { internshipGroups } from '~/data/internships'
           <article class="border-t border-[var(--color-blue-border)] pt-5">
             <span class="mb-4 block h-0.5 w-8 bg-[var(--color-yellow)]" aria-hidden="true"></span>
             <p class="text-xs font-bold uppercase tracking-widest text-[var(--color-navy)]">
-              วุฒิปวช.
+              วุฒิ ปวช.
             </p>
             <p class="mt-2 text-xl font-bold text-[var(--color-navy)] md:text-2xl">
               ประมาณ 1 ภาคเรียน
             </p>
             <p class="mt-2 text-sm leading-6 text-[var(--color-muted)]">
-              ได้ลงมือทำและเรียนรู้จากการทำงานจริงในสถานประกอบการ ฝึกทักษะวิชาชีพและเข้าใจการทำงานในวัฒนธรรมองค์กร
+              ฝึกปฏิบัติงานจริงในสถานประกอบการ เพื่อพัฒนาทักษะวิชาชีพและเรียนรู้วัฒนธรรมองค์กร
             </p>
           </article>
 
@@ -38,29 +38,29 @@ import { internshipGroups } from '~/data/internships'
           <article class="border-t border-[var(--color-blue-border)] pt-5">
             <span class="mb-4 block h-0.5 w-8 bg-[var(--color-yellow)]" aria-hidden="true"></span>
             <p class="text-xs font-bold uppercase tracking-widest text-[var(--color-navy)]">
-              วุฒิปวส.
+              วุฒิ ปวส.
             </p>
             <p class="mt-2 text-xl font-bold text-[var(--color-navy)] md:text-2xl">
               ประมาณ 1 ปีการศึกษา
             </p>
             <p class="mt-2 text-sm leading-6 text-[var(--color-muted)]">
-              บูรณาการกับโปรเจกต์และความรับผิดชอบในองค์กร เกาะติดกับการพัฒนาจริงและการเป็นส่วนหนึ่งของทีม
+              ทำงานกับโปรเจกต์และรับผิดชอบงานในองค์กร พร้อมเรียนรู้กระบวนการพัฒนางานจริงและการทำงานเป็นทีม
             </p>
           </article>
         </div>
 
         <!-- Disclaimer Note -->
-        <p class="mt-6 text-xs text-[var(--color-muted)]">
-          * การฝึกประสบการณ์ไม่ใช่การเชื่อมต่อบังคับ—แต่ละนักศึกษามีประสบการณ์และหลักสูตรที่แตกต่างกัน
+        <p class="mt-6 text-xs leading-5 text-[var(--color-muted)] md:leading-4">
+          * การเปรียบเทียบนี้ไม่ได้หมายถึงเส้นทางบังคับจาก ปวช. สู่ ปวส. ประสบการณ์ฝึกงานของผู้เรียนแต่ละคนอาจแตกต่างกันตามระดับการศึกษาและหลักสูตร
         </p>
       </div>
 
       <!-- Internship Experience Directory -->
       <div class="internship-directory">
         <div class="internship-directory__intro">
-          <h3>ประสบการณ์ฝึกงานในสถานที่และบทบาทที่แตกต่างกัน</h3>
+          <h3>ประสบการณ์ฝึกงานที่หลากหลาย</h3>
           <p>
-            นักศึกษาได้เรียนรู้จากสถานที่ฝึกงาน บทบาท และสภาพแวดล้อมการทำงานที่แตกต่างกัน
+            ผู้เรียนได้เรียนรู้จากสถานที่ฝึกงาน บทบาท และสภาพแวดล้อมการทำงานที่หลากหลาย
           </p>
         </div>
 

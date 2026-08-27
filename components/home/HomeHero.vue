@@ -11,7 +11,7 @@ const { handleAnchorClick } = useSmoothScroll()
             แผนกคอมพิวเตอร์โปรแกรมเมอร์
           </div>
 
-          <h1 class="max-w-[760px] text-[1.75rem] font-bold leading-[1.25] text-[var(--color-text)] sm:text-4xl sm:leading-[1.28] md:text-5xl lg:text-[3.25rem] lg:leading-[1.25]">
+          <h1 class="max-w-[760px] text-[1.75rem] font-bold leading-[1.3] text-[var(--color-text)] sm:text-4xl sm:leading-[1.28] md:text-5xl lg:text-[3.25rem] lg:leading-[1.25]">
             ชอบ<span class="text-[#326BC4]">คอมพิวเตอร์</span><br>
             และอยากลอง<br>
             <span class="text-[#326BC4]">สร้างอะไร</span>ด้วยตัวเองไหม?
@@ -26,12 +26,12 @@ const { handleAnchorClick } = useSmoothScroll()
               รู้จักแผนกของเรา
             </a>
             <a href="#projects" class="btn-secondary min-h-11 px-5 py-2.5 sm:min-h-12 sm:px-7 sm:py-3" @click="handleAnchorClick($event, '#projects')">
-              ดูผลงานนักศึกษา
+              ดูผลงานผู้เรียน
             </a>
           </div>
         </section>
 
-        <section class="flex justify-center md:justify-end" aria-label="พื้นที่สำหรับภาพประกอบของแผนก">
+        <section class="hidden justify-center md:flex md:justify-end" aria-label="พื้นที่สำหรับภาพประกอบของแผนก">
           <div class="surface-card w-full max-w-[540px] p-3 sm:p-5 lg:max-w-[560px]">
             <div class="rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)]">
               <div class="flex items-center gap-2 border-b border-[var(--color-border)] px-3 py-2.5 sm:px-4 sm:py-3">

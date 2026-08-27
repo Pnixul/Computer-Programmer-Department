@@ -5,13 +5,13 @@ const projects = [
   {
     number: firstProject.number,
     title: firstProject.title,
-    meta: 'โปรเจกต์นักเรียน',
+    meta: 'โปรเจกต์ของผู้เรียน',
     description: firstProject.description,
     technologies: firstProject.technologies,
   },
   ...otherProjects.map(project => ({
     ...project,
-    description: 'รายละเอียดแนวคิดและสิ่งที่นักเรียนได้เรียนรู้จากโปรเจกต์',
+    description: 'รายละเอียดแนวคิดและสิ่งที่ผู้เรียนได้เรียนรู้จากโปรเจกต์',
     technologies: [],
   })),
 ]
@@ -339,12 +339,18 @@ const updateProjectProgress = () => {
     projectSheets.value.querySelectorAll<HTMLElement>('.project-sheet'),
   )
   const viewportHeight = window.innerHeight
+  const isMobileViewport = window.innerWidth < 768
   const navbarHeight = Number.parseFloat(
     getComputedStyle(document.documentElement).getPropertyValue('--navbar-height'),
   ) || 0
   const scrollDistance = Math.max(1, sceneRect.height - viewportHeight + navbarHeight)
-  const revealStartOffset = clamp(viewportHeight * 0.08, 48, 88)
-  const revealDistance = clamp(viewportHeight * 0.32, 200, 340)
+  const revealStartOffset = isMobileViewport
+    ? clamp(viewportHeight * 0.045, 28, 44)
+    : clamp(viewportHeight * 0.08, 48, 88)
+  const revealDistance = isMobileViewport
+    ? clamp(viewportHeight * 0.24, 150, 210)
+    : clamp(viewportHeight * 0.32, 200, 340)
+  const initialScale = isMobileViewport ? 0.9 : 0.86
   const archiveCenterX = archiveRect.left + (archiveRect.width / 2)
   const archiveCenterY = archiveRect.top + (archiveRect.height / 2)
 
@@ -362,7 +368,7 @@ const updateProjectProgress = () => {
     const revealProgress = smoothstep(rawRevealProgress)
     const translateX = (archiveCenterX - destinationCenterX) * (1 - revealProgress)
     const translateY = (archiveCenterY - destinationCenterY) * (1 - revealProgress)
-    const scale = 0.86 + (0.14 * revealProgress)
+    const scale = initialScale + ((1 - initialScale) * revealProgress)
     const opacity = smoothstep(rawRevealProgress / 0.3)
     const visualCenterY = destinationCenterY + translateY
     const visualHalfHeight = (item.offsetHeight * scale) / 2
@@ -465,8 +471,8 @@ onBeforeUnmount(() => {
         :data-scroll-progress="scrollProgress.toFixed(3)"
       >
           <header class="projects-header" :style="projectIntroductionStyle">
-            <h2 class="section-title">ผลงานนักเรียน</h2>
-            <p class="body-copy">จากการเรียนรู้ สู่การลงมือสร้างจริง</p>
+            <h2 class="section-title">ผลงานผู้เรียน</h2>
+            <p class="body-copy">จากการเรียนรู้สู่การลงมือสร้างจริง</p>
           </header>
 
           <button
@@ -484,7 +490,7 @@ onBeforeUnmount(() => {
             ref="projectSheets"
             class="project-sheets"
             :class="{ 'project-sheets-static': usesStaticPresentation }"
-            aria-label="ตัวอย่างผลงานนักเรียน"
+            aria-label="ตัวอย่างผลงานผู้เรียน"
             :aria-hidden="isProjectFocusActive ? 'true' : undefined"
           >
             <li
@@ -566,7 +572,7 @@ onBeforeUnmount(() => {
 
           <div class="project-archive-layer">
             <div class="project-archive-anchor">
-              <div class="project-archive" aria-label="คลังผลงานนักเรียน">
+              <div class="project-archive" aria-label="คลังผลงานผู้เรียน">
                 <div class="project-archive__papers" aria-hidden="true">
                   <span></span><span></span><span></span>
                 </div>
@@ -587,7 +593,7 @@ onBeforeUnmount(() => {
                   </svg>
 
                   <div class="project-archive__copy">
-                    <h3>คลังผลงานนักเรียน</h3>
+                    <h3>คลังผลงานผู้เรียน</h3>
                     <p>รวมโปรเจกต์และผลงานจากการเรียนรู้</p>
                   </div>
 
@@ -669,9 +675,9 @@ onBeforeUnmount(() => {
   gap: clamp(3rem, 8svh, 5rem);
   margin: 0;
   padding:
-    clamp(31rem, 72svh, 42rem)
+    clamp(17rem, 34svh, 21rem)
     clamp(1.25rem, 4vw, 3rem)
-    clamp(22rem, 70svh, 40rem);
+    clamp(17rem, 40svh, 24rem);
   list-style: none;
 }
 
@@ -706,12 +712,16 @@ onBeforeUnmount(() => {
   margin-right: clamp(0.5rem, 3vw, 2rem);
 }
 
+.project-sheet:nth-child(5) {
+  margin-left: clamp(0.5rem, 12vw, 9rem);
+}
+
 .project-archive-layer {
   position: relative;
   z-index: 30;
   min-width: 0;
   grid-area: 1 / 1;
-  padding-top: clamp(13rem, 28svh, 16rem);
+  padding-top: clamp(9rem, 18svh, 11rem);
   pointer-events: none;
 }
 
@@ -720,7 +730,7 @@ onBeforeUnmount(() => {
   position: sticky;
   top: max(
     var(--navbar-height),
-    calc(100svh - var(--project-archive-anchor-height) - clamp(2.5rem, 7svh, 4.5rem))
+    calc(100svh - var(--project-archive-anchor-height) - clamp(3.5rem, 9svh, 6rem))
   );
   width: min(22rem, calc(100% - 2rem));
   margin: 0 auto;
@@ -1240,10 +1250,19 @@ onBeforeUnmount(() => {
 }
 
 @media (max-width: 1023px) {
+  .project-sheet:nth-child(n + 5) {
+    display: none;
+  }
+
   .project-sheet {
     --project-sheet-base-height: clamp(18rem, 40svh, 20rem);
     --project-sheet-height-growth: clamp(2.7rem, 6svh, 3rem);
     width: clamp(16rem, 35vw, 18rem);
+  }
+
+  .project-sheets {
+    padding-top: clamp(14rem, 26svh, 17rem);
+    padding-bottom: clamp(14rem, 34svh, 21rem);
   }
 }
 
@@ -1254,7 +1273,8 @@ onBeforeUnmount(() => {
   }
 
   .projects-header .section-title {
-    font-size: clamp(1.75rem, 10vw, 3.25rem);
+    font-size: 1.875rem;
+    line-height: 1.3;
   }
 
   .projects-header .body-copy {
@@ -1264,27 +1284,100 @@ onBeforeUnmount(() => {
   }
 
   .project-sheets {
-    gap: clamp(3rem, 8svh, 4rem);
+    gap: clamp(2.1875rem, 5svh, 3.125rem);
     padding:
-      clamp(30rem, 72svh, 36rem)
+      clamp(10.5rem, 24svh, 12.5rem)
       1.25rem
-      clamp(20rem, 65svh, 32rem);
+      clamp(10rem, 25svh, 13.5rem);
   }
 
   .project-sheet {
-    --project-sheet-base-height: min(21rem, 48svh);
-    --project-sheet-height-growth: min(3.15rem, 7.2svh);
-    width: min(82vw, 21rem);
+    --project-sheet-base-height: 13rem;
+    --project-sheet-height-growth: 1.5rem;
+    width: min(68vw, 16rem);
+  }
+
+  .project-sheet:nth-child(n + 4) {
+    display: none;
+  }
+
+  .project-sheet:nth-child(1) {
+    margin-left: 0.25rem;
+  }
+
+  .project-sheet:nth-child(2) {
+    margin-right: 0.25rem;
+  }
+
+  .project-sheet:nth-child(3) {
+    margin-left: clamp(1rem, 7vw, 1.75rem);
+  }
+
+  .project-card__visual {
+    display: flex;
+    height: 4.5rem;
+    padding: 0.5rem;
+  }
+
+  .project-card__visual::before {
+    inset: 0.4rem;
+  }
+
+  .project-card__visual p {
+    font-size: 0.6875rem;
+    line-height: 1.35;
+  }
+
+  .project-card__visual img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .project-card__visual-mark {
+    width: 2.5rem;
+    height: 0.1875rem;
+  }
+
+  .project-card__content {
+    padding: 0.7rem 0.8rem 0.8rem;
+  }
+
+  .project-card__meta {
+    line-height: 1.4;
+  }
+
+  .project-card__title {
+    margin-top: 0.2rem;
+    line-height: 1.25;
+  }
+
+  .project-card__description {
+    margin-top: 0.3rem;
+    font-size: 0.875rem;
+    line-height: 1.45;
+  }
+
+  .project-card__tags {
+    gap: 0.25rem;
+    padding-top: 0.4rem;
+  }
+
+  .project-card__tags li {
+    padding: 0.2rem 0.45rem;
+    font-size: 0.6875rem;
+    line-height: 1.25;
   }
 
   .project-card-motion-selected {
     width: calc(100% - 2rem);
-    height: min(28rem, calc(100dvh - var(--navbar-height) - 3rem));
-    min-height: 24rem;
+    height: min(22rem, calc(100dvh - var(--navbar-height) - 3rem));
+    min-height: 20rem;
   }
 
   .project-card-selected .project-card__visual {
-    height: 9rem;
+    display: flex;
+    height: 5rem;
   }
 
   .project-card-selected .project-card__content {
@@ -1297,15 +1390,19 @@ onBeforeUnmount(() => {
   }
 
   .project-archive-anchor {
-    --project-archive-anchor-height: 13.25rem;
-    width: min(18rem, calc(100% - 2rem));
+    --project-archive-anchor-height: 11.75rem;
+    top: max(
+      var(--navbar-height),
+      calc(100svh - var(--project-archive-anchor-height) - clamp(5rem, 18svh, 10rem))
+    );
+    width: min(16.5rem, calc(100% - 3rem));
   }
 
   .project-archive__body {
     grid-template-columns: 1.85rem minmax(0, 1fr);
     gap: 0.65rem 0.75rem;
-    min-height: 11.25rem;
-    padding: 1.3rem 1rem 1.2rem;
+    min-height: 9.75rem;
+    padding: 1rem 0.875rem 0.95rem;
   }
 
   .project-archive__icon {
@@ -1319,12 +1416,12 @@ onBeforeUnmount(() => {
   }
 
   .project-archive__copy p {
-    font-size: 0.72rem;
-    line-height: 1.6;
+    font-size: 0.75rem;
+    line-height: 1.65;
   }
 
   .project-archive__action {
-    min-height: 2.35rem;
+    min-height: 2.75rem;
     padding: 0.5rem 0.75rem;
   }
 
@@ -1339,8 +1436,8 @@ onBeforeUnmount(() => {
   }
 
   .project-sheets-static .project-sheet {
-    width: min(100%, 22rem);
-    height: 21rem;
+    width: min(68vw, 16rem);
+    height: 14.5rem;
     justify-self: center;
   }
 

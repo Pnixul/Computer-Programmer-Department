@@ -7,7 +7,7 @@ const navItems = [
   { label: 'หน้าหลัก', href: '#home', id: 'home' },
   { label: 'เกี่ยวกับแผนก', href: '#about', id: 'about' },
   { label: 'การเรียนการสอน', href: '#curriculum', id: 'curriculum' },
-  { label: 'ผลงานนักศึกษา', href: '#projects', id: 'projects' },
+  { label: 'ผลงานผู้เรียน', href: '#projects', id: 'projects' },
   { label: 'ฝึกประสบการณ์วิชาชีพ', href: '#internship', id: 'internship' },
   { label: 'FAQ', href: '#faq', id: 'faq' },
   { label: 'ติดต่อเรา', href: '#contact', id: 'contact' }
@@ -89,7 +89,7 @@ onBeforeUnmount(() => {
 <template>
   <nav
     class="department-navbar sticky top-0 z-30 w-full"
-    aria-label="Primary navigation"
+    aria-label="เมนูหลัก"
   >
     <div class="site-container relative flex h-[72px] items-center justify-between gap-6 py-2 md:h-[76px] lg:h-20">
       <a
@@ -99,12 +99,12 @@ onBeforeUnmount(() => {
       >
         <img
           src="/images/department-logo.png"
-          alt="โลโก้แผนกช่างเขียนโปรแกรมคอมพิวเตอร์"
+          alt="โลโก้แผนกคอมพิวเตอร์โปรแกรมเมอร์"
           class="h-10 w-10 shrink-0 object-contain md:h-11 md:w-11"
         >
         <div class="min-w-0">
           <p class="truncate text-base font-extrabold leading-tight text-white sm:text-lg lg:text-xl">Computer Programmer</p>
-          <p class="mt-0.5 truncate text-xs font-medium text-white/70 md:text-sm">Learn / Build / Create</p>
+          <p class="mt-0.5 truncate text-xs font-medium text-white/80 md:text-sm md:text-white/70">Learn / Build / Create</p>
         </div>
       </a>
 
@@ -132,7 +132,7 @@ onBeforeUnmount(() => {
         aria-controls="mobile-navigation"
         @click="isMenuOpen = !isMenuOpen"
       >
-        Menu
+        เมนู
       </button>
 
       <div
