@@ -22,4 +22,9 @@ export const otherProjects = [
     title: 'ชื่อโปรเจกต์ 04',
     meta: 'ประเภทโปรเจกต์ / 20XX',
   },
+  {
+    number: '05',
+    title: 'ชื่อโปรเจกต์ 05',
+    meta: 'ประเภทโปรเจกต์ / 20XX',
+  },
 ]
