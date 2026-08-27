@@ -12,7 +12,7 @@
       </header>
 
       <div class="grid items-center gap-10 md:grid-cols-[0.92fr_1.08fr] lg:gap-14 xl:gap-16">
-        <div class="media-placeholder max-w-[560px] md:max-w-none">
+        <div class="media-placeholder hidden max-w-[560px] md:flex md:max-w-none">
           <p class="media-placeholder-text">
             พื้นที่สำหรับรูปภาพ
           </p>

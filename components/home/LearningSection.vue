@@ -117,7 +117,7 @@ onBeforeUnmount(() => {
         class="learning-scroll-layout grid gap-10 md:grid-cols-[42fr_58fr] lg:grid-cols-[45fr_55fr] lg:gap-14 xl:gap-16"
       >
         <div
-          class="learning-visual-column static md:sticky md:self-start"
+          class="learning-visual-column hidden md:sticky md:block md:self-start"
           data-learning-visual
           :data-active-card="learningItems[activeIndex].number"
         >
@@ -161,7 +161,7 @@ onBeforeUnmount(() => {
                   <h3 class="text-xl font-bold leading-tight text-[var(--color-text)] md:text-2xl">
                     {{ item.title }}
                   </h3>
-                  <p class="mt-3 text-base leading-8 text-[var(--color-muted)]">
+                  <p class="mt-3 text-base leading-7 text-[var(--color-muted)] md:leading-8">
                     {{ item.description }}
                   </p>
                 </div>

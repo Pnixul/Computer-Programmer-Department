@@ -50,7 +50,7 @@ import { internshipGroups } from '~/data/internships'
         </div>
 
         <!-- Disclaimer Note -->
-        <p class="mt-6 text-xs text-[var(--color-muted)]">
+        <p class="mt-6 text-xs leading-5 text-[var(--color-muted)] md:leading-4">
           * การเปรียบเทียบนี้ไม่ได้หมายถึงเส้นทางบังคับจาก ปวช. สู่ ปวส. ประสบการณ์ฝึกงานของผู้เรียนแต่ละคนอาจแตกต่างกันตามระดับการศึกษาและหลักสูตร
         </p>
       </div>

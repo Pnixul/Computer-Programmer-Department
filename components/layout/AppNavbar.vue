@@ -104,7 +104,7 @@ onBeforeUnmount(() => {
         >
         <div class="min-w-0">
           <p class="truncate text-base font-extrabold leading-tight text-white sm:text-lg lg:text-xl">Computer Programmer</p>
-          <p class="mt-0.5 truncate text-xs font-medium text-white/70 md:text-sm">Learn / Build / Create</p>
+          <p class="mt-0.5 truncate text-xs font-medium text-white/80 md:text-sm md:text-white/70">Learn / Build / Create</p>
         </div>
       </a>
 
