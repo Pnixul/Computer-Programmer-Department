@@ -24,27 +24,54 @@ type HangingPreset = {
   verticalOffset: number
   perspective: number
   edgeDepth: number
+  momentum: number
 }
 
 const hangingPresets: HangingPreset[] = [
-  { lineLeft: 122, lineRight: 128, tilt: 0.8, verticalOffset: 2, perspective: -0.45, edgeDepth: 8 },
-  { lineLeft: 142, lineRight: 136, tilt: -0.7, verticalOffset: 14, perspective: 0.5, edgeDepth: 9 },
-  { lineLeft: 112, lineRight: 116, tilt: 0.45, verticalOffset: -4, perspective: -0.3, edgeDepth: 7 },
-  { lineLeft: 134, lineRight: 126, tilt: -0.9, verticalOffset: 9, perspective: 0.55, edgeDepth: 10 },
-  { lineLeft: 118, lineRight: 123, tilt: 0.6, verticalOffset: 5, perspective: -0.4, edgeDepth: 8 },
+  { lineLeft: 122, lineRight: 128, tilt: 0.8, verticalOffset: 2, perspective: -0.45, edgeDepth: 8, momentum: 0.82 },
+  { lineLeft: 142, lineRight: 136, tilt: -0.7, verticalOffset: 14, perspective: 0.5, edgeDepth: 9, momentum: 0.96 },
+  { lineLeft: 112, lineRight: 116, tilt: 0.45, verticalOffset: -4, perspective: -0.3, edgeDepth: 7, momentum: 0.72 },
+  { lineLeft: 134, lineRight: 126, tilt: -0.9, verticalOffset: 9, perspective: 0.55, edgeDepth: 10, momentum: 1.04 },
+  { lineLeft: 118, lineRight: 123, tilt: 0.6, verticalOffset: 5, perspective: -0.4, edgeDepth: 8, momentum: 0.88 },
 ]
+
+const LAST_PROJECT_POSITION = projects.length - 1
+const FINAL_PROJECT_HOLD = 0.33
+const CONCLUSION_TRANSITION = 0.88
+const CONCLUSION_HOLD = 0.46
+const CONCLUSION_START = LAST_PROJECT_POSITION + FINAL_PROJECT_HOLD
+const CONCLUSION_END = CONCLUSION_START + CONCLUSION_TRANSITION
+const TIMELINE_DURATION = CONCLUSION_END + CONCLUSION_HOLD
+const SCROLL_DISTANCE_PER_UNIT = 78
+const projectScrollDistance = `${(TIMELINE_DURATION * SCROLL_DISTANCE_PER_UNIT).toFixed(1)}svh`
 
 const scrollScene = ref<HTMLElement | null>(null)
 const stickyStage = ref<HTMLElement | null>(null)
-const scrollProgress = ref(0)
-const stageWidth = ref(1280)
+const introduction = ref<HTMLElement | null>(null)
+const conclusion = ref<HTMLElement | null>(null)
+const progressFill = ref<HTMLElement | null>(null)
+const activeProjectIndex = ref(0)
+const isConclusionScene = ref(false)
+const isConclusionInteractive = ref(false)
 const isDesktop = ref(false)
 const isScrollReady = ref(false)
 const prefersReducedMotion = ref(false)
 
 let scrollFrameId: number | undefined
+let resizeFrameId: number | undefined
+let motionFrameId: number | undefined
 let desktopMedia: MediaQueryList | null = null
 let reducedMotionMedia: MediaQueryList | null = null
+let projectElements: HTMLElement[] = []
+let stageWidth = 1280
+let sceneTop = 0
+let sceneScrollDistance = 1
+let navbarHeight = 0
+let targetTimelinePosition = 0
+let motionTimelinePosition = 0
+let motionVelocity = 0
+let lastMotionTime = 0
+let previousExhibitionPosition = 0
 
 const clamp = (value: number, minimum = 0, maximum = 1) => {
   return Math.min(Math.max(value, minimum), maximum)
@@ -55,10 +82,6 @@ const smoothstep = (value: number) => {
   return progress * progress * (3 - (2 * progress))
 }
 
-const activePosition = computed(() => scrollProgress.value * projects.length)
-const activeProjectIndex = computed(() => {
-  return Math.min(projects.length - 1, Math.round(activePosition.value))
-})
 const usesStaticPresentation = computed(() => {
   return !isScrollReady.value || !isDesktop.value || prefersReducedMotion.value
 })
@@ -70,92 +93,226 @@ const getPreset = (index: number) => {
 const getProjectStyle = (index: number): CSSProperties => {
   const preset = getPreset(index)
 
-  if (usesStaticPresentation.value) {
-    return {
-      '--line-left': `${preset.lineLeft}px`,
-      '--line-right': `${preset.lineRight}px`,
-      '--board-tilt': `${preset.tilt}deg`,
-      '--board-perspective': `${preset.perspective}deg`,
-      '--edge-depth': `${preset.edgeDepth}px`,
-      '--project-y': `${preset.verticalOffset}px`,
-    } as CSSProperties
-  }
-
-  const offset = index - activePosition.value
-  const distance = Math.abs(offset)
-  const focus = 1 - clamp(distance)
-  const direction = offset === 0 ? 0 : Math.sign(offset)
-  const spacing = clamp(stageWidth.value * 0.48, 470, 650)
-  const introductionClearance = (1 - smoothstep(activePosition.value / 0.78))
-    * clamp(stageWidth.value * 0.18, 150, 260)
-  const horizontalPosition = (offset * spacing) + introductionClearance
-  const settlingOffset = (1 - focus) * -7
-  const enteringTilt = direction * (1 - focus) * 0.55
-  const scale = 0.965 + (focus * 0.035)
-
   return {
     '--line-left': `${preset.lineLeft}px`,
     '--line-right': `${preset.lineRight}px`,
-    '--project-x': `${horizontalPosition.toFixed(2)}px`,
-    '--project-y': `${(preset.verticalOffset + settlingOffset).toFixed(2)}px`,
-    '--project-scale': scale.toFixed(4),
-    '--board-tilt': `${(preset.tilt + enteringTilt).toFixed(3)}deg`,
+    '--project-y': `${preset.verticalOffset}px`,
+    '--board-tilt': `${preset.tilt}deg`,
     '--board-perspective': `${preset.perspective}deg`,
     '--edge-depth': `${preset.edgeDepth}px`,
-    '--project-z': String(20 + Math.round(focus * 10)),
   } as CSSProperties
 }
 
-const introductionStyle = computed<CSSProperties>(() => {
-  if (usesStaticPresentation.value) return {}
+const mapTimelineToExhibition = (timelinePosition: number) => {
+  if (timelinePosition <= LAST_PROJECT_POSITION) {
+    return Math.max(-0.05, timelinePosition)
+  }
 
-  const exitProgress = smoothstep(activePosition.value / 0.9)
-  const horizontalShift = exitProgress * clamp(stageWidth.value * 0.54, 520, 760)
-  const verticalShift = exitProgress * -16
+  if (timelinePosition < CONCLUSION_START) return LAST_PROJECT_POSITION
 
-  return {
-    '--introduction-x': `${horizontalShift.toFixed(2)}px`,
-    '--introduction-y': `${verticalShift.toFixed(2)}px`,
-  } as CSSProperties
-})
+  const conclusionProgress = smoothstep(
+    (timelinePosition - CONCLUSION_START) / CONCLUSION_TRANSITION,
+  )
+  return LAST_PROJECT_POSITION + conclusionProgress
+}
 
-const conclusionStyle = computed<CSSProperties>(() => {
-  if (usesStaticPresentation.value) return {}
+const setProjectVariable = (element: HTMLElement, property: string, value: string) => {
+  element.style.setProperty(property, value)
+}
 
-  const offset = projects.length - activePosition.value
-  const spacing = clamp(stageWidth.value * 0.48, 470, 650)
+const applyMotionState = (timelinePosition: number, exhibitionVelocity: number) => {
+  const activePosition = mapTimelineToExhibition(timelinePosition)
+  const spacing = clamp(stageWidth * 0.48, 470, 650)
+  const introductionClearance = (1 - smoothstep(activePosition / 0.78))
+    * clamp(stageWidth * 0.18, 150, 260)
 
-  return {
-    '--conclusion-x': `${(offset * spacing).toFixed(2)}px`,
-  } as CSSProperties
-})
+  projectElements.forEach((element, index) => {
+    const preset = getPreset(index)
+    const offset = index - activePosition
+    const distance = Math.abs(offset)
+    const focus = 1 - clamp(distance)
+    const direction = offset === 0 ? 0 : Math.sign(offset)
+    const horizontalPosition = (offset * spacing) + introductionClearance
+    const settlingOffset = ((1 - focus) * -7)
+      - (Math.min(Math.abs(exhibitionVelocity), 5) * focus * 0.32)
+    const enteringTilt = direction * (1 - focus) * 0.5
+    const momentumTilt = clamp(exhibitionVelocity * preset.momentum * 0.09, -0.72, 0.72)
+      * (0.38 + (focus * 0.62))
+    const scale = 0.965 + (focus * 0.035)
 
-const updateProjectProgress = () => {
-  scrollFrameId = undefined
+    setProjectVariable(element, '--project-x', `${horizontalPosition.toFixed(2)}px`)
+    setProjectVariable(element, '--project-y', `${(preset.verticalOffset + settlingOffset).toFixed(2)}px`)
+    setProjectVariable(element, '--project-scale', scale.toFixed(4))
+    setProjectVariable(element, '--board-tilt', `${(preset.tilt + enteringTilt + momentumTilt).toFixed(3)}deg`)
+    setProjectVariable(element, '--line-sway', `${(momentumTilt * 0.42).toFixed(3)}deg`)
+    setProjectVariable(element, '--project-z', String(20 + Math.round(focus * 10)))
+  })
 
-  if (!scrollScene.value || !stickyStage.value) return
+  const exitProgress = smoothstep(activePosition / 0.9)
+  const introductionShift = exitProgress * clamp(stageWidth * 0.54, 520, 760)
+  introduction.value?.style.setProperty('--introduction-x', `${introductionShift.toFixed(2)}px`)
+  introduction.value?.style.setProperty('--introduction-y', `${(exitProgress * -16).toFixed(2)}px`)
 
-  stageWidth.value = stickyStage.value.offsetWidth
-  isDesktop.value = desktopMedia?.matches ?? false
-  prefersReducedMotion.value = reducedMotionMedia?.matches ?? false
+  const conclusionOffset = projects.length - activePosition
+  const conclusionReveal = smoothstep((activePosition - LAST_PROJECT_POSITION) / 0.72)
+  conclusion.value?.style.setProperty('--conclusion-x', `${(conclusionOffset * spacing).toFixed(2)}px`)
+  conclusion.value?.style.setProperty('--conclusion-y', `${((1 - conclusionReveal) * 12).toFixed(2)}px`)
+  conclusion.value?.style.setProperty('--conclusion-opacity', conclusionReveal.toFixed(3))
 
-  if (usesStaticPresentation.value) {
-    scrollProgress.value = 0
+  progressFill.value?.style.setProperty(
+    'transform',
+    `scaleX(${Math.max(0.04, clamp(timelinePosition / CONCLUSION_END)).toFixed(4)})`,
+  )
+
+  const nextProjectIndex = Math.min(
+    projects.length - 1,
+    Math.max(0, Math.round(activePosition)),
+  )
+  if (activeProjectIndex.value !== nextProjectIndex) {
+    activeProjectIndex.value = nextProjectIndex
+  }
+
+  const nextConclusionScene = activePosition > LAST_PROJECT_POSITION + 0.42
+  if (isConclusionScene.value !== nextConclusionScene) {
+    isConclusionScene.value = nextConclusionScene
+  }
+
+  const nextConclusionInteractive = conclusionReveal > 0.82
+  if (isConclusionInteractive.value !== nextConclusionInteractive) {
+    isConclusionInteractive.value = nextConclusionInteractive
+  }
+}
+
+const resetToStaticPresentation = () => {
+  projectElements.forEach((element, index) => {
+    const preset = getPreset(index)
+    setProjectVariable(element, '--project-x', '0px')
+    setProjectVariable(element, '--project-y', `${preset.verticalOffset}px`)
+    setProjectVariable(element, '--project-scale', '1')
+    setProjectVariable(element, '--board-tilt', `${preset.tilt}deg`)
+    setProjectVariable(element, '--line-sway', '0deg')
+    setProjectVariable(element, '--project-z', '20')
+  })
+
+  introduction.value?.style.setProperty('--introduction-x', '0px')
+  introduction.value?.style.setProperty('--introduction-y', '0px')
+  conclusion.value?.style.setProperty('--conclusion-x', '0px')
+  conclusion.value?.style.setProperty('--conclusion-y', '0px')
+  conclusion.value?.style.setProperty('--conclusion-opacity', '1')
+  activeProjectIndex.value = 0
+  isConclusionScene.value = false
+  isConclusionInteractive.value = true
+}
+
+const stopMotion = () => {
+  if (motionFrameId !== undefined) {
+    window.cancelAnimationFrame(motionFrameId)
+    motionFrameId = undefined
+  }
+  lastMotionTime = 0
+}
+
+const updateMotion = (timestamp: number) => {
+  motionFrameId = undefined
+
+  if (usesStaticPresentation.value) return
+
+  const deltaTime = lastMotionTime
+    ? clamp((timestamp - lastMotionTime) / 1000, 1 / 240, 1 / 30)
+    : 1 / 60
+  lastMotionTime = timestamp
+
+  const displacement = targetTimelinePosition - motionTimelinePosition
+  motionVelocity += displacement * 145 * deltaTime
+  motionVelocity *= Math.exp(-18 * deltaTime)
+  motionVelocity = clamp(motionVelocity, -11, 11)
+  motionTimelinePosition += motionVelocity * deltaTime
+  motionTimelinePosition = clamp(motionTimelinePosition, -0.06, TIMELINE_DURATION + 0.06)
+
+  const exhibitionPosition = mapTimelineToExhibition(motionTimelinePosition)
+  const exhibitionVelocity = (exhibitionPosition - previousExhibitionPosition) / deltaTime
+  previousExhibitionPosition = exhibitionPosition
+  applyMotionState(motionTimelinePosition, exhibitionVelocity)
+
+  const hasSettled = Math.abs(displacement) < 0.00035 && Math.abs(motionVelocity) < 0.0025
+  if (hasSettled) {
+    motionTimelinePosition = targetTimelinePosition
+    motionVelocity = 0
+    previousExhibitionPosition = mapTimelineToExhibition(motionTimelinePosition)
+    applyMotionState(motionTimelinePosition, 0)
+    lastMotionTime = 0
     return
   }
 
-  const sceneRect = scrollScene.value.getBoundingClientRect()
-  const navbarHeight = Number.parseFloat(
-    getComputedStyle(document.documentElement).getPropertyValue('--navbar-height'),
-  ) || 0
-  const scrollDistance = Math.max(1, scrollScene.value.offsetHeight - stickyStage.value.offsetHeight)
+  motionFrameId = window.requestAnimationFrame(updateMotion)
+}
 
-  scrollProgress.value = clamp((navbarHeight - sceneRect.top) / scrollDistance)
+const requestMotionUpdate = () => {
+  if (motionFrameId !== undefined || usesStaticPresentation.value) return
+  motionFrameId = window.requestAnimationFrame(updateMotion)
+}
+
+const updateScrollTarget = () => {
+  scrollFrameId = undefined
+
+  if (!scrollScene.value || usesStaticPresentation.value) return
+
+  const progress = clamp((window.scrollY + navbarHeight - sceneTop) / sceneScrollDistance)
+  targetTimelinePosition = progress * TIMELINE_DURATION
+  requestMotionUpdate()
 }
 
 const requestProjectProgressUpdate = () => {
   if (scrollFrameId !== undefined) return
-  scrollFrameId = window.requestAnimationFrame(updateProjectProgress)
+  scrollFrameId = window.requestAnimationFrame(updateScrollTarget)
+}
+
+const measureScene = (synchronizeMotion = false) => {
+  if (!scrollScene.value || !stickyStage.value) return
+
+  stageWidth = stickyStage.value.offsetWidth
+  sceneTop = scrollScene.value.getBoundingClientRect().top + window.scrollY
+  sceneScrollDistance = Math.max(1, scrollScene.value.offsetHeight - stickyStage.value.offsetHeight)
+  navbarHeight = Number.parseFloat(
+    getComputedStyle(document.documentElement).getPropertyValue('--navbar-height'),
+  ) || 0
+
+  if (usesStaticPresentation.value) {
+    stopMotion()
+    resetToStaticPresentation()
+    return
+  }
+
+  const progress = clamp((window.scrollY + navbarHeight - sceneTop) / sceneScrollDistance)
+  targetTimelinePosition = progress * TIMELINE_DURATION
+
+  if (synchronizeMotion) {
+    stopMotion()
+    motionTimelinePosition = targetTimelinePosition
+    motionVelocity = 0
+    previousExhibitionPosition = mapTimelineToExhibition(motionTimelinePosition)
+    applyMotionState(motionTimelinePosition, 0)
+    return
+  }
+
+  applyMotionState(motionTimelinePosition, motionVelocity)
+  requestMotionUpdate()
+}
+
+const requestSceneMeasurement = () => {
+  if (resizeFrameId !== undefined) return
+  resizeFrameId = window.requestAnimationFrame(() => {
+    resizeFrameId = undefined
+    measureScene()
+  })
+}
+
+const handlePresentationChange = async () => {
+  isDesktop.value = desktopMedia?.matches ?? false
+  prefersReducedMotion.value = reducedMotionMedia?.matches ?? false
+
+  await nextTick()
+  measureScene(true)
 }
 
 onMounted(async () => {
@@ -167,22 +324,32 @@ onMounted(async () => {
 
   await nextTick()
 
+  projectElements = stickyStage.value
+    ? Array.from(stickyStage.value.querySelectorAll<HTMLElement>('.hanging-project'))
+    : []
+
   window.addEventListener('scroll', requestProjectProgressUpdate, { passive: true })
-  window.addEventListener('resize', requestProjectProgressUpdate, { passive: true })
-  desktopMedia.addEventListener('change', requestProjectProgressUpdate)
-  reducedMotionMedia.addEventListener('change', requestProjectProgressUpdate)
-  requestProjectProgressUpdate()
+  window.addEventListener('resize', requestSceneMeasurement, { passive: true })
+  window.addEventListener('load', requestSceneMeasurement, { passive: true, once: true })
+  desktopMedia.addEventListener('change', handlePresentationChange)
+  reducedMotionMedia.addEventListener('change', handlePresentationChange)
+  measureScene(true)
 })
 
 onBeforeUnmount(() => {
   window.removeEventListener('scroll', requestProjectProgressUpdate)
-  window.removeEventListener('resize', requestProjectProgressUpdate)
-  desktopMedia?.removeEventListener('change', requestProjectProgressUpdate)
-  reducedMotionMedia?.removeEventListener('change', requestProjectProgressUpdate)
+  window.removeEventListener('resize', requestSceneMeasurement)
+  window.removeEventListener('load', requestSceneMeasurement)
+  desktopMedia?.removeEventListener('change', handlePresentationChange)
+  reducedMotionMedia?.removeEventListener('change', handlePresentationChange)
 
   if (scrollFrameId !== undefined) {
     window.cancelAnimationFrame(scrollFrameId)
   }
+  if (resizeFrameId !== undefined) {
+    window.cancelAnimationFrame(resizeFrameId)
+  }
+  stopMotion()
 })
 </script>
 
@@ -192,12 +359,12 @@ onBeforeUnmount(() => {
       ref="scrollScene"
       class="projects-exhibition"
       :class="{ 'projects-exhibition-static': usesStaticPresentation }"
-      :style="{ '--project-transitions': projects.length }"
+      :style="{ '--project-scroll-distance': projectScrollDistance }"
     >
       <div ref="stickyStage" class="projects-exhibition__stage">
         <div class="projects-exhibition__ambient" aria-hidden="true"></div>
 
-        <header class="projects-introduction" :style="introductionStyle">
+        <header ref="introduction" class="projects-introduction">
           <p class="eyebrow">Project exhibition</p>
           <h2 class="section-title">ผลงานผู้เรียน</h2>
           <p class="body-copy mt-5 max-w-md">
@@ -220,9 +387,9 @@ onBeforeUnmount(() => {
             :id="`project-${project.number}`"
             :key="project.number"
             class="hanging-project"
-            :class="{ 'hanging-project-active': !usesStaticPresentation && activeProjectIndex === index && activePosition < projects.length - 0.45 }"
+            :class="{ 'hanging-project-active': !usesStaticPresentation && activeProjectIndex === index && !isConclusionScene }"
             :style="getProjectStyle(index)"
-            :aria-current="!usesStaticPresentation && activeProjectIndex === index ? 'true' : undefined"
+            :aria-current="!usesStaticPresentation && activeProjectIndex === index && !isConclusionScene ? 'true' : undefined"
           >
             <div class="hanging-project__rig">
               <span class="hanging-line hanging-line-left" aria-hidden="true">
@@ -278,10 +445,15 @@ onBeforeUnmount(() => {
           </li>
         </ol>
 
-        <div class="projects-conclusion" :style="conclusionStyle">
+        <div
+          ref="conclusion"
+          class="projects-conclusion"
+          :inert="!usesStaticPresentation && !isConclusionInteractive ? true : undefined"
+          :aria-hidden="!usesStaticPresentation && !isConclusionInteractive ? 'true' : undefined"
+        >
           <p class="projects-conclusion__overline">End of selection</p>
-          <h3>ยังมีไอเดียอีกมาก<br>ให้คุณได้สำรวจ</h3>
-          <p>ดูผลงานและเรื่องราวการเรียนรู้ของผู้เรียนทั้งหมด</p>
+          <h3>ยังมีผลงานอีกมาก<br>ให้คุณได้สำรวจ</h3>
+          <p>ดูผลงานเพิ่มเติมจากผู้เรียนในแผนก</p>
           <NuxtLink to="/projects" class="btn-primary projects-conclusion__action">
             <span>ดูโปรเจกต์ทั้งหมด</span>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -296,7 +468,7 @@ onBeforeUnmount(() => {
             {{ String(Math.min(projects.length, activeProjectIndex + 1)).padStart(2, '0') }}
           </span>
           <span class="projects-progress__track">
-            <span :style="{ transform: `scaleX(${Math.max(0.04, scrollProgress)})` }"></span>
+            <span ref="progressFill"></span>
           </span>
           <span>{{ String(projects.length).padStart(2, '0') }}</span>
         </div>
@@ -317,7 +489,7 @@ onBeforeUnmount(() => {
 .projects-exhibition {
   --project-board-width: clamp(22rem, 32vw, 29rem);
   position: relative;
-  height: calc(100svh + (var(--project-transitions) * 82svh));
+  height: calc(100svh + var(--project-scroll-distance));
 }
 
 .projects-exhibition__stage {
@@ -359,7 +531,6 @@ onBeforeUnmount(() => {
   z-index: 4;
   width: min(34vw, 29rem);
   transform: translate3d(calc(-1 * var(--introduction-x)), calc(-50% + var(--introduction-y)), 0);
-  transition: transform 110ms linear;
   will-change: transform;
 }
 
@@ -424,6 +595,7 @@ onBeforeUnmount(() => {
   --project-z: 20;
   --board-tilt: 0deg;
   --board-perspective: 0deg;
+  --line-sway: 0deg;
   --edge-depth: 8px;
   position: absolute;
   top: clamp(0.35rem, 1.5vh, 1rem);
@@ -433,7 +605,6 @@ onBeforeUnmount(() => {
   height: calc(max(var(--line-left), var(--line-right)) + 31rem);
   transform: translate3d(calc(-50% + var(--project-x)), var(--project-y), 0) scale(var(--project-scale));
   transform-origin: center 15%;
-  transition: transform 110ms linear;
   will-change: transform;
 }
 
@@ -457,13 +628,13 @@ onBeforeUnmount(() => {
 .hanging-line-left {
   left: 21.5%;
   height: var(--line-left);
-  transform: rotate(0.18deg);
+  transform: rotate(calc(0.18deg + var(--line-sway)));
 }
 
 .hanging-line-right {
   right: 21.5%;
   height: var(--line-right);
-  transform: rotate(-0.15deg);
+  transform: rotate(calc(-0.15deg + var(--line-sway)));
 }
 
 .hanging-line__ceiling,
@@ -499,7 +670,7 @@ onBeforeUnmount(() => {
   width: 100%;
   transform: perspective(1200px) rotateY(var(--board-perspective)) rotateZ(var(--board-tilt));
   transform-origin: 50% 0;
-  transition: transform 120ms linear, filter 260ms ease-out;
+  transition: filter 260ms ease-out;
   filter: drop-shadow(0 1.25rem 1.25rem rgba(23, 32, 51, 0.1));
   will-change: transform;
 }
@@ -609,11 +780,16 @@ onBeforeUnmount(() => {
   top: 1rem;
   left: 1rem;
   z-index: 1;
-  color: var(--color-navy);
-  font-size: clamp(1.65rem, 3vw, 2.35rem);
+  min-width: 3rem;
+  border-bottom: 0.22rem solid var(--color-yellow);
+  padding: 0.52rem 0.68rem 0.42rem;
+  background: var(--color-navy);
+  color: #fff;
+  font-size: clamp(1.15rem, 2vw, 1.45rem);
   font-weight: 800;
   line-height: 1;
-  letter-spacing: -0.06em;
+  letter-spacing: -0.035em;
+  text-align: center;
 }
 
 .project-board__visual-mark {
@@ -686,23 +862,59 @@ onBeforeUnmount(() => {
 
 .projects-conclusion {
   --conclusion-x: 0px;
+  --conclusion-y: 0px;
+  --conclusion-opacity: 1;
   position: absolute;
   top: 50%;
   left: 55%;
   z-index: 25;
   width: min(34rem, 40vw);
-  transform: translate3d(calc(-50% + var(--conclusion-x)), -50%, 0);
-  transition: transform 110ms linear;
+  padding-top: 1.35rem;
+  opacity: var(--conclusion-opacity);
+  transform: translate3d(calc(-50% + var(--conclusion-x)), calc(-50% + var(--conclusion-y)), 0);
   will-change: transform;
 }
 
+.projects-conclusion::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: clamp(4.5rem, 10vw, 7rem);
+  height: 0.2rem;
+  background: var(--color-yellow);
+}
+
+.projects-conclusion::after {
+  content: '';
+  position: absolute;
+  top: 0.08rem;
+  right: 0;
+  left: clamp(4.5rem, 10vw, 7rem);
+  height: 1px;
+  background: var(--color-blue-border);
+}
+
 .projects-conclusion__overline {
-  margin-bottom: 0.8rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin-bottom: 1rem;
   color: var(--color-blue);
   font-size: 0.7rem;
   font-weight: 800;
   letter-spacing: 0.12em;
   text-transform: uppercase;
+}
+
+.projects-conclusion__overline::before {
+  content: '';
+  width: 0.42rem;
+  height: 0.42rem;
+  border: 1px solid var(--color-navy);
+  border-radius: 999px;
+  background: var(--color-surface);
+  box-shadow: inset 0 0 0 1px var(--color-yellow);
 }
 
 .projects-conclusion h3 {
@@ -823,6 +1035,7 @@ onBeforeUnmount(() => {
   width: 100%;
   height: calc(max(var(--line-left), var(--line-right)) + 31rem);
   transform: translate3d(0, var(--project-y), 0);
+  will-change: auto;
 }
 
 .projects-exhibition-static .projects-conclusion {
@@ -831,7 +1044,9 @@ onBeforeUnmount(() => {
   left: auto;
   width: min(100% - 3rem, 64rem);
   margin: 5rem auto 0;
+  opacity: 1;
   transform: none;
+  will-change: auto;
 }
 
 @media (max-width: 1279px) {
