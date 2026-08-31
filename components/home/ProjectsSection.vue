@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { CSSProperties } from 'vue'
 import { firstProject, otherProjects } from '~/data/projects'
 
 const projects = [
@@ -16,54 +17,34 @@ const projects = [
   })),
 ]
 
-const PROJECT_FOCUS_DURATION_MS = 520
-const PROJECT_OPEN_EASING = 'cubic-bezier(0.16, 1, 0.3, 1)'
-
-type ProjectInteractionPhase = 'choreographing' | 'opening' | 'focused' | 'closing'
-type ProjectMotionState = {
-  translateX: number
-  translateY: number
-  scale: number
-  opacity: number
-  revealProgress: number
-  isInViewport: boolean
+type HangingPreset = {
+  lineLeft: number
+  lineRight: number
+  tilt: number
+  verticalOffset: number
+  perspective: number
+  edgeDepth: number
 }
 
-const createInitialProjectMotionState = (): ProjectMotionState => ({
-  translateX: 0,
-  translateY: 0,
-  scale: 0.86,
-  opacity: 0,
-  revealProgress: 0,
-  isInViewport: false,
-})
-
-const projectMotionStates = ref<ProjectMotionState[]>(
-  projects.map(() => createInitialProjectMotionState()),
-)
+const hangingPresets: HangingPreset[] = [
+  { lineLeft: 122, lineRight: 128, tilt: 0.8, verticalOffset: 2, perspective: -0.45, edgeDepth: 8 },
+  { lineLeft: 142, lineRight: 136, tilt: -0.7, verticalOffset: 14, perspective: 0.5, edgeDepth: 9 },
+  { lineLeft: 112, lineRight: 116, tilt: 0.45, verticalOffset: -4, perspective: -0.3, edgeDepth: 7 },
+  { lineLeft: 134, lineRight: 126, tilt: -0.9, verticalOffset: 9, perspective: 0.55, edgeDepth: 10 },
+  { lineLeft: 118, lineRight: 123, tilt: 0.6, verticalOffset: 5, perspective: -0.4, edgeDepth: 8 },
+]
 
 const scrollScene = ref<HTMLElement | null>(null)
-const stageCanvas = ref<HTMLElement | null>(null)
-const projectSheets = ref<HTMLElement | null>(null)
-const focusSurface = ref<HTMLElement | null>(null)
+const stickyStage = ref<HTMLElement | null>(null)
 const scrollProgress = ref(0)
-const prefersReducedMotion = ref(false)
+const stageWidth = ref(1280)
+const isDesktop = ref(false)
 const isScrollReady = ref(false)
-const isSceneActive = ref(false)
-const selectedProjectIndex = ref<number | null>(null)
-const projectInteractionPhase = ref<ProjectInteractionPhase>('choreographing')
-
-const isProjectFocusActive = computed(() => projectInteractionPhase.value !== 'choreographing')
-const usesStaticPresentation = computed(() => !isScrollReady.value || prefersReducedMotion.value)
+const prefersReducedMotion = ref(false)
 
 let scrollFrameId: number | undefined
-let sceneObserver: IntersectionObserver | null = null
+let desktopMedia: MediaQueryList | null = null
 let reducedMotionMedia: MediaQueryList | null = null
-let isSceneVisible = false
-let projectFocusAnimation: Animation | null = null
-let projectFocusMotion: HTMLElement | null = null
-let projectTrigger: HTMLElement | null = null
-let projectReturnOpacity = 1
 
 const clamp = (value: number, minimum = 0, maximum = 1) => {
   return Math.min(Math.max(value, minimum), maximum)
@@ -74,379 +55,130 @@ const smoothstep = (value: number) => {
   return progress * progress * (3 - (2 * progress))
 }
 
-const projectIntroductionStyle = computed(() => {
-  if (usesStaticPresentation.value) return undefined
-
-  const fadeProgress = smoothstep((scrollProgress.value - 0.015) / 0.12)
-
-  return {
-    opacity: (1 - fadeProgress).toFixed(3),
-    visibility: fadeProgress > 0.995 ? 'hidden' : 'visible',
-  }
+const activePosition = computed(() => scrollProgress.value * projects.length)
+const activeProjectIndex = computed(() => {
+  return Math.min(projects.length - 1, Math.round(activePosition.value))
+})
+const usesStaticPresentation = computed(() => {
+  return !isScrollReady.value || !isDesktop.value || prefersReducedMotion.value
 })
 
-const isProjectAvailable = (index: number) => {
-  if (usesStaticPresentation.value) return true
-
-  const state = projectMotionStates.value[index]
-  return Boolean(state?.revealProgress >= 0.82 && state.isInViewport)
+const getPreset = (index: number) => {
+  return hangingPresets[index % hangingPresets.length] ?? hangingPresets[0]!
 }
 
-const getProjectSheetStyle = (index: number) => {
-  if (usesStaticPresentation.value) return undefined
+const getProjectStyle = (index: number): CSSProperties => {
+  const preset = getPreset(index)
 
-  const state = projectMotionStates.value[index] ?? createInitialProjectMotionState()
-  const isInteractive = isProjectAvailable(index)
-    && projectInteractionPhase.value === 'choreographing'
+  if (usesStaticPresentation.value) {
+    return {
+      '--line-left': `${preset.lineLeft}px`,
+      '--line-right': `${preset.lineRight}px`,
+      '--board-tilt': `${preset.tilt}deg`,
+      '--board-perspective': `${preset.perspective}deg`,
+      '--edge-depth': `${preset.edgeDepth}px`,
+      '--project-y': `${preset.verticalOffset}px`,
+    } as CSSProperties
+  }
+
+  const offset = index - activePosition.value
+  const distance = Math.abs(offset)
+  const focus = 1 - clamp(distance)
+  const direction = offset === 0 ? 0 : Math.sign(offset)
+  const spacing = clamp(stageWidth.value * 0.48, 470, 650)
+  const introductionClearance = (1 - smoothstep(activePosition.value / 0.78))
+    * clamp(stageWidth.value * 0.18, 150, 260)
+  const horizontalPosition = (offset * spacing) + introductionClearance
+  const settlingOffset = (1 - focus) * -7
+  const enteringTilt = direction * (1 - focus) * 0.55
+  const scale = 0.965 + (focus * 0.035)
 
   return {
-    opacity: state.opacity.toFixed(4),
-    pointerEvents: isInteractive ? 'auto' : 'none',
-    transform: `translate3d(${state.translateX.toFixed(2)}px, ${state.translateY.toFixed(2)}px, 0) scale(${state.scale.toFixed(4)})`,
-  }
+    '--line-left': `${preset.lineLeft}px`,
+    '--line-right': `${preset.lineRight}px`,
+    '--project-x': `${horizontalPosition.toFixed(2)}px`,
+    '--project-y': `${(preset.verticalOffset + settlingOffset).toFixed(2)}px`,
+    '--project-scale': scale.toFixed(4),
+    '--board-tilt': `${(preset.tilt + enteringTilt).toFixed(3)}deg`,
+    '--board-perspective': `${preset.perspective}deg`,
+    '--edge-depth': `${preset.edgeDepth}px`,
+    '--project-z': String(20 + Math.round(focus * 10)),
+  } as CSSProperties
 }
 
-const isProjectHidden = (index: number) => {
-  if (usesStaticPresentation.value) return false
-  return (projectMotionStates.value[index]?.opacity ?? 0) < 0.02
-}
+const introductionStyle = computed<CSSProperties>(() => {
+  if (usesStaticPresentation.value) return {}
 
-const getProjectItem = (index: number) => {
-  return stageCanvas.value?.querySelector<HTMLElement>(`[data-project-index="${index}"]`) ?? null
-}
+  const exitProgress = smoothstep(activePosition.value / 0.9)
+  const horizontalShift = exitProgress * clamp(stageWidth.value * 0.54, 520, 760)
+  const verticalShift = exitProgress * -16
 
-const getProjectCard = (index: number) => {
-  return getProjectItem(index)?.querySelector<HTMLElement>('.project-card') ?? null
-}
+  return {
+    '--introduction-x': `${horizontalShift.toFixed(2)}px`,
+    '--introduction-y': `${verticalShift.toFixed(2)}px`,
+  } as CSSProperties
+})
 
-const getProjectMotion = (index: number) => {
-  return getProjectItem(index)?.querySelector<HTMLElement>('.project-card-motion') ?? null
-}
+const conclusionStyle = computed<CSSProperties>(() => {
+  if (usesStaticPresentation.value) return {}
 
-const getCurrentTransformMetrics = (element: HTMLElement) => {
-  const transform = getComputedStyle(element).transform
+  const offset = projects.length - activePosition.value
+  const spacing = clamp(stageWidth.value * 0.48, 470, 650)
 
-  if (transform === 'none') {
-    return { rotation: 0, scaleX: 1, scaleY: 1 }
-  }
-
-  try {
-    const matrix = new DOMMatrixReadOnly(transform)
-    return {
-      rotation: Math.atan2(matrix.b, matrix.a) * (180 / Math.PI),
-      scaleX: Math.hypot(matrix.a, matrix.b),
-      scaleY: Math.hypot(matrix.c, matrix.d),
-    }
-  }
-  catch {
-    return { rotation: 0, scaleX: 1, scaleY: 1 }
-  }
-}
-
-const getFocusTransformForProjectItem = (
-  projectItem: HTMLElement,
-  projectMotion: HTMLElement,
-  surfaceRect: DOMRect,
-) => {
-  const itemRect = projectItem.getBoundingClientRect()
-  const itemTransform = getCurrentTransformMetrics(projectItem)
-  const itemCenterX = itemRect.left + itemRect.width / 2
-  const itemCenterY = itemRect.top + itemRect.height / 2
-  const surfaceCenterX = surfaceRect.left + surfaceRect.width / 2
-  const surfaceCenterY = surfaceRect.top + surfaceRect.height / 2
-  const translateX = itemCenterX - surfaceCenterX
-  const translateY = itemCenterY - surfaceCenterY
-  const scaleX = projectItem.offsetWidth * itemTransform.scaleX / projectMotion.offsetWidth
-  const scaleY = projectItem.offsetHeight * itemTransform.scaleY / projectMotion.offsetHeight
-
-  return `translate3d(calc(-50% + ${translateX}px), calc(-50% + ${translateY}px), 0) scale(${scaleX}, ${scaleY}) rotate(${itemTransform.rotation}deg)`
-}
-
-const waitForAnimation = async (animation: Animation) => {
-  try {
-    await animation.finished
-    return true
-  }
-  catch {
-    return false
-  }
-}
-
-const focusCloseControl = () => {
-  focusSurface.value
-    ?.querySelector<HTMLButtonElement>('.project-card__close')
-    ?.focus({ preventScroll: true })
-}
-
-const openProject = async (index: number) => {
-  if (
-    projectInteractionPhase.value !== 'choreographing'
-    || !focusSurface.value
-    || !isProjectAvailable(index)
-  ) return
-
-  const projectItem = getProjectItem(index)
-  const projectMotion = getProjectMotion(index)
-  const projectCard = getProjectCard(index)
-
-  if (!projectItem || !projectMotion || !projectCard) return
-
-  const firstRect = projectCard.getBoundingClientRect()
-  const startingRotation = getCurrentTransformMetrics(projectItem).rotation
-
-  projectReturnOpacity = Number.parseFloat(getComputedStyle(projectItem).opacity) || 1
-  projectFocusMotion = projectMotion
-  projectTrigger = projectCard
-  selectedProjectIndex.value = index
-  projectInteractionPhase.value = 'opening'
-
-  await nextTick()
-
-  const surfaceRect = focusSurface.value?.getBoundingClientRect()
-
-  if (!surfaceRect || !projectMotion.isConnected) {
-    selectedProjectIndex.value = null
-    projectInteractionPhase.value = 'choreographing'
-    projectFocusMotion = null
-    projectTrigger = null
-    return
-  }
-
-  const targetWidth = projectMotion.offsetWidth
-  const targetHeight = projectMotion.offsetHeight
-  const targetCenterX = surfaceRect.left + surfaceRect.width / 2
-  const targetCenterY = surfaceRect.top + surfaceRect.height / 2
-  const firstCenterX = firstRect.left + firstRect.width / 2
-  const firstCenterY = firstRect.top + firstRect.height / 2
-  const translateX = firstCenterX - targetCenterX
-  const translateY = firstCenterY - targetCenterY
-  const scaleX = firstRect.width / targetWidth
-  const scaleY = firstRect.height / targetHeight
-  const targetTransform = 'translate3d(-50%, -50%, 0) scale(1) rotate(0deg)'
-  const openingFrames: Keyframe[] = prefersReducedMotion.value
-    ? [
-        { transform: targetTransform, opacity: 0.82 },
-        { transform: targetTransform, opacity: 1 },
-      ]
-    : [
-        {
-          transform: `translate3d(calc(-50% + ${translateX}px), calc(-50% + ${translateY}px), 0) scale(${scaleX}, ${scaleY}) rotate(${startingRotation}deg)`,
-          opacity: projectReturnOpacity,
-        },
-        { transform: targetTransform, opacity: 1 },
-      ]
-
-  const openingAnimation = projectMotion.animate(openingFrames, {
-    duration: prefersReducedMotion.value ? 140 : PROJECT_FOCUS_DURATION_MS,
-    easing: PROJECT_OPEN_EASING,
-    fill: 'both',
-  })
-  projectFocusAnimation = openingAnimation
-
-  const didFinish = await waitForAnimation(openingAnimation)
-
-  if (
-    !didFinish
-    || projectInteractionPhase.value !== 'opening'
-    || projectFocusAnimation !== openingAnimation
-  ) return
-
-  openingAnimation.cancel()
-  projectFocusAnimation = null
-  projectInteractionPhase.value = 'focused'
-  await nextTick()
-  focusCloseControl()
-}
-
-const closeProject = async () => {
-  if (projectInteractionPhase.value !== 'focused' || selectedProjectIndex.value === null) return
-
-  const closingIndex = selectedProjectIndex.value
-  const returningItem = getProjectItem(closingIndex)
-  const returningMotion = projectFocusMotion
-  const returningCard = projectTrigger
-  const surfaceRect = focusSurface.value?.getBoundingClientRect()
-
-  if (!returningItem || !returningMotion || !surfaceRect) return
-
-  projectInteractionPhase.value = 'closing'
-
-  const focusedTransform = 'translate3d(-50%, -50%, 0) scale(1) rotate(0deg)'
-  const destinationTransform = getFocusTransformForProjectItem(
-    returningItem,
-    returningMotion,
-    surfaceRect,
-  )
-  const closingFrames: Keyframe[] = prefersReducedMotion.value
-    ? [
-        { transform: focusedTransform, opacity: 1 },
-        { transform: focusedTransform, opacity: projectReturnOpacity },
-      ]
-    : [
-        { transform: focusedTransform, opacity: 1 },
-        { transform: destinationTransform, opacity: projectReturnOpacity },
-      ]
-
-  const closingAnimation = returningMotion.animate(closingFrames, {
-    duration: prefersReducedMotion.value ? 140 : PROJECT_FOCUS_DURATION_MS,
-    easing: PROJECT_OPEN_EASING,
-    fill: 'both',
-  })
-  projectFocusAnimation = closingAnimation
-
-  const didFinish = await waitForAnimation(closingAnimation)
-
-  if (
-    !didFinish
-    || projectInteractionPhase.value !== 'closing'
-    || projectFocusAnimation !== closingAnimation
-  ) return
-
-  closingAnimation.cancel()
-  projectFocusAnimation = null
-  projectFocusMotion = null
-
-  selectedProjectIndex.value = null
-  projectInteractionPhase.value = 'choreographing'
-  await nextTick()
-
-  if (returningCard?.isConnected) {
-    returningCard.focus({ preventScroll: true })
-  }
-
-  projectTrigger = null
-}
+  return {
+    '--conclusion-x': `${(offset * spacing).toFixed(2)}px`,
+  } as CSSProperties
+})
 
 const updateProjectProgress = () => {
   scrollFrameId = undefined
 
-  if (!scrollScene.value || !stageCanvas.value || !projectSheets.value) return
+  if (!scrollScene.value || !stickyStage.value) return
 
-  const archive = stageCanvas.value.querySelector<HTMLElement>('.project-archive')
-  if (!archive) return
+  stageWidth.value = stickyStage.value.offsetWidth
+  isDesktop.value = desktopMedia?.matches ?? false
+  prefersReducedMotion.value = reducedMotionMedia?.matches ?? false
 
   if (usesStaticPresentation.value) {
-    scrollProgress.value = 1
+    scrollProgress.value = 0
     return
   }
 
-  if (projectInteractionPhase.value !== 'choreographing') return
-
   const sceneRect = scrollScene.value.getBoundingClientRect()
-  const archiveRect = archive.getBoundingClientRect()
-  const sheetsRect = projectSheets.value.getBoundingClientRect()
-  const projectItems = Array.from(
-    projectSheets.value.querySelectorAll<HTMLElement>('.project-sheet'),
-  )
-  const viewportHeight = window.innerHeight
-  const isMobileViewport = window.innerWidth < 768
   const navbarHeight = Number.parseFloat(
     getComputedStyle(document.documentElement).getPropertyValue('--navbar-height'),
   ) || 0
-  const scrollDistance = Math.max(1, sceneRect.height - viewportHeight + navbarHeight)
-  const revealStartOffset = isMobileViewport
-    ? clamp(viewportHeight * 0.045, 28, 44)
-    : clamp(viewportHeight * 0.08, 48, 88)
-  const revealDistance = isMobileViewport
-    ? clamp(viewportHeight * 0.24, 150, 210)
-    : clamp(viewportHeight * 0.32, 200, 340)
-  const initialScale = isMobileViewport ? 0.9 : 0.86
-  const archiveCenterX = archiveRect.left + (archiveRect.width / 2)
-  const archiveCenterY = archiveRect.top + (archiveRect.height / 2)
+  const scrollDistance = Math.max(1, scrollScene.value.offsetHeight - stickyStage.value.offsetHeight)
 
   scrollProgress.value = clamp((navbarHeight - sceneRect.top) / scrollDistance)
-  projectMotionStates.value = projects.map((_, index) => {
-    const item = projectItems[index]
-
-    if (!item) return createInitialProjectMotionState()
-
-    const destinationCenterX = sheetsRect.left + item.offsetLeft + (item.offsetWidth / 2)
-    const destinationCenterY = sheetsRect.top + item.offsetTop + (item.offsetHeight / 2)
-    const rawRevealProgress = clamp(
-      (archiveCenterY + revealStartOffset - destinationCenterY) / revealDistance,
-    )
-    const revealProgress = smoothstep(rawRevealProgress)
-    const translateX = (archiveCenterX - destinationCenterX) * (1 - revealProgress)
-    const translateY = (archiveCenterY - destinationCenterY) * (1 - revealProgress)
-    const scale = initialScale + ((1 - initialScale) * revealProgress)
-    const opacity = smoothstep(rawRevealProgress / 0.3)
-    const visualCenterY = destinationCenterY + translateY
-    const visualHalfHeight = (item.offsetHeight * scale) / 2
-
-    return {
-      translateX,
-      translateY,
-      scale,
-      opacity,
-      revealProgress,
-      isInViewport: visualCenterY + visualHalfHeight > navbarHeight + 8
-        && visualCenterY - visualHalfHeight < viewportHeight - 8,
-    }
-  })
 }
 
-function requestProjectProgressUpdate(force = false) {
-  if ((!force && !isSceneVisible) || scrollFrameId !== undefined) return
+const requestProjectProgressUpdate = () => {
+  if (scrollFrameId !== undefined) return
   scrollFrameId = window.requestAnimationFrame(updateProjectProgress)
 }
 
-const handleScroll = () => {
-  requestProjectProgressUpdate()
-}
-
-const handleResize = () => {
-  requestProjectProgressUpdate(true)
-}
-
-const handleReducedMotionChange = () => {
-  prefersReducedMotion.value = reducedMotionMedia?.matches ?? false
-  void nextTick(() => requestProjectProgressUpdate(true))
-}
-
-const handleProjectKeydown = (event: KeyboardEvent) => {
-  if (event.key === 'Escape') {
-    void closeProject()
-  }
-}
-
 onMounted(async () => {
+  desktopMedia = window.matchMedia('(min-width: 1024px)')
   reducedMotionMedia = window.matchMedia('(prefers-reduced-motion: reduce)')
+  isDesktop.value = desktopMedia.matches
   prefersReducedMotion.value = reducedMotionMedia.matches
   isScrollReady.value = true
 
   await nextTick()
 
-  sceneObserver = new IntersectionObserver(([entry]) => {
-    isSceneVisible = entry?.isIntersecting ?? false
-    isSceneActive.value = isSceneVisible
-
-    if (isSceneVisible) {
-      requestProjectProgressUpdate(true)
-    }
-  }, {
-    rootMargin: '50% 0px',
-  })
-
-  if (scrollScene.value) {
-    sceneObserver.observe(scrollScene.value)
-  }
-
-  window.addEventListener('scroll', handleScroll, { passive: true })
-  window.addEventListener('resize', handleResize, { passive: true })
-  window.addEventListener('keydown', handleProjectKeydown)
-  reducedMotionMedia.addEventListener('change', handleReducedMotionChange)
-  requestProjectProgressUpdate(true)
+  window.addEventListener('scroll', requestProjectProgressUpdate, { passive: true })
+  window.addEventListener('resize', requestProjectProgressUpdate, { passive: true })
+  desktopMedia.addEventListener('change', requestProjectProgressUpdate)
+  reducedMotionMedia.addEventListener('change', requestProjectProgressUpdate)
+  requestProjectProgressUpdate()
 })
 
 onBeforeUnmount(() => {
-  projectFocusAnimation?.cancel()
-  projectFocusAnimation = null
-  projectFocusMotion = null
-  sceneObserver?.disconnect()
-  window.removeEventListener('scroll', handleScroll)
-  window.removeEventListener('resize', handleResize)
-  window.removeEventListener('keydown', handleProjectKeydown)
-  reducedMotionMedia?.removeEventListener('change', handleReducedMotionChange)
+  window.removeEventListener('scroll', requestProjectProgressUpdate)
+  window.removeEventListener('resize', requestProjectProgressUpdate)
+  desktopMedia?.removeEventListener('change', requestProjectProgressUpdate)
+  reducedMotionMedia?.removeEventListener('change', requestProjectProgressUpdate)
 
   if (scrollFrameId !== undefined) {
     window.cancelAnimationFrame(scrollFrameId)
@@ -458,166 +190,116 @@ onBeforeUnmount(() => {
   <section id="projects" class="site-section site-section-alt projects-section">
     <div
       ref="scrollScene"
-      class="projects-scroll-scene"
-      :class="{ 'projects-scroll-scene-static': usesStaticPresentation }"
+      class="projects-exhibition"
+      :class="{ 'projects-exhibition-static': usesStaticPresentation }"
+      :style="{ '--project-transitions': projects.length }"
     >
-      <div
-        ref="stageCanvas"
-        class="projects-stage-canvas"
-        :class="{
-          'projects-stage-canvas-active': isSceneActive,
-          'projects-stage-canvas-focused': isProjectFocusActive,
-        }"
-        :data-scroll-progress="scrollProgress.toFixed(3)"
-      >
-          <header class="projects-header" :style="projectIntroductionStyle">
-            <h2 class="section-title">ผลงานผู้เรียน</h2>
-            <p class="body-copy">จากการเรียนรู้สู่การลงมือสร้างจริง</p>
-          </header>
+      <div ref="stickyStage" class="projects-exhibition__stage">
+        <div class="projects-exhibition__ambient" aria-hidden="true"></div>
 
-          <button
-            v-if="selectedProjectIndex !== null"
-            type="button"
-            class="project-focus-backdrop"
-            tabindex="-1"
-            aria-label="ปิดรายละเอียดโปรเจกต์"
-            @click="closeProject"
-          ></button>
+        <header class="projects-introduction" :style="introductionStyle">
+          <p class="eyebrow">Project exhibition</p>
+          <h2 class="section-title">ผลงานผู้เรียน</h2>
+          <p class="body-copy mt-5 max-w-md">
+            จากการเรียนรู้สู่การลงมือสร้างจริง
+          </p>
+          <div class="projects-introduction__edition" aria-hidden="true">
+            <span>Selected projects</span>
+            <span>01—{{ String(projects.length).padStart(2, '0') }}</span>
+          </div>
+        </header>
 
-          <div id="project-focus-surface" ref="focusSurface" class="project-focus-surface"></div>
+        <p class="projects-scroll-cue" aria-hidden="true">
+          <span class="projects-scroll-cue__line"></span>
+          เลื่อนเพื่อชมนิทรรศการ
+        </p>
 
-          <ul
-            ref="projectSheets"
-            class="project-sheets"
-            :class="{ 'project-sheets-static': usesStaticPresentation }"
-            aria-label="ตัวอย่างผลงานผู้เรียน"
-            :aria-hidden="isProjectFocusActive ? 'true' : undefined"
+        <ol class="projects-rail" aria-label="ตัวอย่างผลงานผู้เรียน">
+          <li
+            v-for="(project, index) in projects"
+            :id="`project-${project.number}`"
+            :key="project.number"
+            class="hanging-project"
+            :class="{ 'hanging-project-active': !usesStaticPresentation && activeProjectIndex === index && activePosition < projects.length - 0.45 }"
+            :style="getProjectStyle(index)"
+            :aria-current="!usesStaticPresentation && activeProjectIndex === index ? 'true' : undefined"
           >
-            <li
-              v-for="(project, index) in projects"
-              :key="project.number"
-              class="project-sheet"
-              :class="{
-                'project-sheet-selected': selectedProjectIndex === index,
-                'project-sheet-hidden': isProjectHidden(index),
-              }"
-              :data-project-index="index"
-              :style="getProjectSheetStyle(index)"
-              :aria-hidden="isProjectHidden(index) ? 'true' : undefined"
-            >
-              <Teleport to="#project-focus-surface" :disabled="selectedProjectIndex !== index">
-                <div
-                  class="project-card-motion"
-                  :class="{ 'project-card-motion-selected': selectedProjectIndex === index }"
-                >
-                  <article
-                    class="project-card"
-                    :class="{ 'project-card-selected': selectedProjectIndex === index }"
-                    :tabindex="(isProjectFocusActive && selectedProjectIndex !== index) || !isProjectAvailable(index) ? -1 : 0"
-                    :role="selectedProjectIndex === index ? 'dialog' : 'button'"
-                    :aria-modal="selectedProjectIndex === index ? 'false' : undefined"
-                    :aria-labelledby="`project-title-${project.number}`"
-                    :aria-describedby="`project-description-${project.number}`"
-                    :aria-haspopup="selectedProjectIndex === index ? undefined : 'dialog'"
-                    @click="openProject(index)"
-                    @keydown.enter.self.prevent="openProject(index)"
-                    @keydown.space.self.prevent="openProject(index)"
+            <div class="hanging-project__rig">
+              <span class="hanging-line hanging-line-left" aria-hidden="true">
+                <span class="hanging-line__ceiling"></span>
+                <span class="hanging-line__fastener"></span>
+              </span>
+              <span class="hanging-line hanging-line-right" aria-hidden="true">
+                <span class="hanging-line__ceiling"></span>
+                <span class="hanging-line__fastener"></span>
+              </span>
+
+              <div class="project-board-shell">
+                <span class="project-board__edge project-board__edge-right" aria-hidden="true"></span>
+                <span class="project-board__edge project-board__edge-bottom" aria-hidden="true"></span>
+
+                <article class="project-board" :aria-labelledby="`project-title-${project.number}`">
+                  <span class="project-board__mount project-board__mount-left" aria-hidden="true"></span>
+                  <span class="project-board__mount project-board__mount-right" aria-hidden="true"></span>
+
+                  <div
+                    class="project-board__visual"
+                    role="img"
+                    :aria-label="`พื้นที่สำหรับภาพประกอบโปรเจกต์ ${project.title}`"
                   >
-                    <button
-                      v-if="selectedProjectIndex === index"
-                      type="button"
-                      class="project-card__close"
-                      :aria-label="`ปิดรายละเอียด ${project.title}`"
-                      @click.stop="closeProject"
-                    >
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
-                        <path d="m6 6 12 12" />
-                        <path d="M18 6 6 18" />
-                      </svg>
-                    </button>
-
-                    <div
-                      class="project-card__visual"
-                      :aria-label="`พื้นที่สำหรับภาพประกอบโปรเจกต์ ${project.title}`"
-                      role="img"
-                    >
-                      <p>พื้นที่สำหรับภาพผลงาน</p>
-                      <span class="project-card__visual-mark" aria-hidden="true"></span>
-                    </div>
-
-                    <div class="project-card__content">
-                      <p class="project-card__meta">{{ project.meta }}</p>
-                      <h3 :id="`project-title-${project.number}`" class="project-card__title">
-                        {{ project.title }}
-                      </h3>
-                      <p :id="`project-description-${project.number}`" class="project-card__description">
-                        {{ project.description }}
-                      </p>
-
-                      <ul
-                        v-if="project.technologies.length"
-                        class="project-card__tags"
-                        :aria-label="`เทคโนโลยีที่ใช้ใน ${project.title}`"
-                      >
-                        <li v-for="technology in project.technologies" :key="technology">
-                          {{ technology }}
-                        </li>
-                      </ul>
-                    </div>
-                  </article>
-                </div>
-              </Teleport>
-            </li>
-          </ul>
-
-          <div class="project-archive-layer">
-            <div class="project-archive-anchor">
-              <div class="project-archive" aria-label="คลังผลงานผู้เรียน">
-                <div class="project-archive__papers" aria-hidden="true">
-                  <span></span><span></span><span></span>
-                </div>
-
-                <div class="project-archive__body">
-                  <svg
-                    class="project-archive__icon"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="1.6"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    aria-hidden="true"
-                  >
-                    <path d="M3.5 7.5h6l2-2h9v13h-17z" />
-                    <path d="M3.5 9.5h17" />
-                  </svg>
-
-                  <div class="project-archive__copy">
-                    <h3>คลังผลงานผู้เรียน</h3>
-                    <p>รวมโปรเจกต์และผลงานจากการเรียนรู้</p>
+                    <div class="project-board__visual-grid" aria-hidden="true"></div>
+                    <span class="project-board__visual-number">{{ project.number }}</span>
+                    <p>พื้นที่สำหรับภาพผลงาน</p>
+                    <span class="project-board__visual-mark" aria-hidden="true"></span>
                   </div>
 
-                  <button
-                    type="button"
-                    class="project-archive__action"
-                    aria-label="เปิดคลังผลงาน (หน้ารวมผลงานจะเปิดให้ใช้งานในอนาคต)"
-                    disabled
-                  >
-                    <span>เปิดคลังผลงาน</span>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                      <path d="M5 12h14" />
-                      <path d="m13 6 6 6-6 6" />
-                    </svg>
-                  </button>
-                  <!-- Replace this disabled button with a NuxtLink to /projects when that route is available. -->
-                </div>
-              </div>
+                  <div class="project-board__content">
+                    <p class="project-board__meta">{{ project.meta }}</p>
+                    <h3 :id="`project-title-${project.number}`" class="project-board__title">
+                      {{ project.title }}
+                    </h3>
+                    <p class="project-board__description">
+                      {{ project.description }}
+                    </p>
 
-              <p v-if="!usesStaticPresentation" class="projects-scroll-hint" aria-hidden="true">
-                เลื่อนเพื่อเปิดดูผลงานทีละชิ้น
-              </p>
+                    <ul
+                      v-if="project.technologies.length"
+                      class="project-board__tags"
+                      :aria-label="`เทคโนโลยีที่ใช้ใน ${project.title}`"
+                    >
+                      <li v-for="technology in project.technologies" :key="technology">
+                        {{ technology }}
+                      </li>
+                    </ul>
+                  </div>
+                </article>
+              </div>
             </div>
-          </div>
+          </li>
+        </ol>
+
+        <div class="projects-conclusion" :style="conclusionStyle">
+          <p class="projects-conclusion__overline">End of selection</p>
+          <h3>ยังมีไอเดียอีกมาก<br>ให้คุณได้สำรวจ</h3>
+          <p>ดูผลงานและเรื่องราวการเรียนรู้ของผู้เรียนทั้งหมด</p>
+          <NuxtLink to="/projects" class="btn-primary projects-conclusion__action">
+            <span>ดูโปรเจกต์ทั้งหมด</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M5 12h14" />
+              <path d="m13 6 6 6-6 6" />
+            </svg>
+          </NuxtLink>
+        </div>
+
+        <div v-if="!usesStaticPresentation" class="projects-progress" aria-hidden="true">
+          <span class="projects-progress__current">
+            {{ String(Math.min(projects.length, activeProjectIndex + 1)).padStart(2, '0') }}
+          </span>
+          <span class="projects-progress__track">
+            <span :style="{ transform: `scaleX(${Math.max(0.04, scrollProgress)})` }"></span>
+          </span>
+          <span>{{ String(projects.length).padStart(2, '0') }}</span>
+        </div>
       </div>
     </div>
   </section>
@@ -625,840 +307,638 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .projects-section {
-  padding: 0;
+  overflow: clip;
+  padding-block: 0;
+  background:
+    linear-gradient(180deg, rgba(238, 243, 251, 0.3), transparent 16rem),
+    var(--color-surface);
 }
 
-.projects-header {
-  position: absolute;
-  top: clamp(1.5rem, 4.5vh, 3rem);
-  left: 50%;
-  z-index: 40;
-  width: min(48rem, calc(100% - 3rem));
-  text-align: center;
-  transform: translateX(-50%);
-}
-
-.projects-header .section-title {
-  font-size: clamp(1.75rem, 5vw, 3.25rem);
-  letter-spacing: -0.03em;
-  text-wrap: balance;
-}
-
-.projects-header .body-copy {
-  max-width: 34rem;
-  margin: 0.75rem auto 0;
-  color: var(--color-navy);
-  font-size: clamp(1rem, 2vw, 1.5rem);
-  font-weight: 600;
-  line-height: 1.7;
-}
-
-.projects-scroll-scene {
+.projects-exhibition {
+  --project-board-width: clamp(22rem, 32vw, 29rem);
   position: relative;
+  height: calc(100svh + (var(--project-transitions) * 82svh));
 }
 
-.projects-stage-canvas {
-  position: relative;
-  display: grid;
-  width: min(100%, 1280px);
-  margin: 0 auto;
+.projects-exhibition__stage {
+  position: sticky;
+  top: var(--navbar-height);
+  height: calc(100svh - var(--navbar-height));
+  min-height: 39rem;
+  overflow: hidden;
   isolation: isolate;
 }
 
-.project-sheets {
-  position: relative;
-  z-index: 10;
+.projects-exhibition__ambient {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, rgba(36, 59, 107, 0.025) 1px, transparent 1px) 50% 0 / min(8vw, 7rem) 100%,
+    linear-gradient(180deg, rgba(23, 32, 51, 0.025), transparent 24%);
+  mask-image: linear-gradient(90deg, transparent, black 20%, black 82%, transparent);
+}
+
+.projects-exhibition__ambient::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--color-blue-border) 20%, var(--color-blue-border) 80%, transparent);
+}
+
+.projects-introduction {
+  --introduction-x: 0px;
+  --introduction-y: 0px;
+  position: absolute;
+  top: 50%;
+  left: max(2rem, calc((100vw - 1280px) / 2 + 3rem));
+  z-index: 4;
+  width: min(34vw, 29rem);
+  transform: translate3d(calc(-1 * var(--introduction-x)), calc(-50% + var(--introduction-y)), 0);
+  transition: transform 110ms linear;
+  will-change: transform;
+}
+
+.projects-introduction__edition {
   display: flex;
-  min-width: 0;
-  grid-area: 1 / 1;
-  flex-direction: column;
-  gap: clamp(3rem, 8svh, 5rem);
+  justify-content: space-between;
+  width: min(100%, 22rem);
+  margin-top: clamp(2.25rem, 6vh, 4.5rem);
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--color-border);
+  color: var(--color-muted);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.projects-scroll-cue {
+  position: absolute;
+  bottom: clamp(2rem, 5vh, 3.5rem);
+  left: max(2rem, calc((100vw - 1280px) / 2 + 3rem));
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: var(--color-muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.projects-scroll-cue__line {
+  position: relative;
+  display: block;
+  width: 2.5rem;
+  height: 1px;
+  overflow: hidden;
+  background: var(--color-blue-border);
+}
+
+.projects-scroll-cue__line::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--color-blue);
+  transform: translateX(-100%);
+  animation: scroll-cue 2.4s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+}
+
+.projects-rail {
+  position: absolute;
+  inset: 0;
   margin: 0;
-  padding:
-    clamp(17rem, 34svh, 21rem)
-    clamp(1.25rem, 4vw, 3rem)
-    clamp(17rem, 40svh, 24rem);
+  padding: 0;
   list-style: none;
 }
 
-.project-sheet {
-  --project-sheet-base-height: clamp(19.5rem, 42svh, 22rem);
-  --project-sheet-height-growth: clamp(2.925rem, 6.3svh, 3.3rem);
-  position: relative;
-  flex: 0 0 auto;
-  width: clamp(18rem, 24vw, 21rem);
-  height: calc(var(--project-sheet-base-height) + var(--project-sheet-height-growth));
-  margin-block-end: calc(0rem - var(--project-sheet-height-growth));
-  opacity: 0;
-  transform-origin: center;
-  will-change: auto;
-}
-
-.project-sheet:nth-child(odd) {
-  align-self: flex-start;
-  margin-left: clamp(0rem, 5vw, 3.5rem);
-}
-
-.project-sheet:nth-child(even) {
-  align-self: flex-end;
-  margin-right: clamp(0rem, 7vw, 4.5rem);
-}
-
-.project-sheet:nth-child(3) {
-  margin-left: clamp(1rem, 9vw, 7rem);
-}
-
-.project-sheet:nth-child(4) {
-  margin-right: clamp(0.5rem, 3vw, 2rem);
-}
-
-.project-sheet:nth-child(5) {
-  margin-left: clamp(0.5rem, 12vw, 9rem);
-}
-
-.project-archive-layer {
-  position: relative;
-  z-index: 30;
-  min-width: 0;
-  grid-area: 1 / 1;
-  padding-top: clamp(9rem, 18svh, 11rem);
-  pointer-events: none;
-}
-
-.project-archive-anchor {
-  --project-archive-anchor-height: 14.25rem;
-  position: sticky;
-  top: max(
-    var(--navbar-height),
-    calc(100svh - var(--project-archive-anchor-height) - clamp(3.5rem, 9svh, 6rem))
-  );
-  width: min(22rem, calc(100% - 2rem));
-  margin: 0 auto;
-  pointer-events: none;
-}
-
-.projects-stage-canvas-active .project-sheet {
-  will-change: transform, opacity;
-}
-
-.project-sheet-hidden {
-  visibility: hidden;
-}
-
-.projects-stage-canvas-focused .project-sheet:not(.project-sheet-selected) {
-  opacity: 0.14 !important;
-  pointer-events: none !important;
-}
-
-.project-card-motion {
-  width: 100%;
-  height: 100%;
-}
-
-.project-focus-backdrop {
-  position: fixed;
-  top: var(--navbar-height);
-  right: 0;
-  bottom: 0;
-  left: 0;
-  z-index: 60;
-  border: 0;
-  padding: 0;
-  background: rgba(238, 243, 251, 0.88);
-  cursor: pointer;
-  animation: project-backdrop-in 220ms ease-out both;
-}
-
-.project-focus-surface {
-  position: fixed;
-  top: var(--navbar-height);
-  right: 0;
-  bottom: 0;
-  left: 0;
-  z-index: 70;
-  pointer-events: none;
-}
-
-.project-card-motion-selected {
+.hanging-project {
+  --project-x: 0px;
+  --project-y: 0px;
+  --project-scale: 1;
+  --project-z: 20;
+  --board-tilt: 0deg;
+  --board-perspective: 0deg;
+  --edge-depth: 8px;
   position: absolute;
-  top: 50%;
+  top: clamp(0.35rem, 1.5vh, 1rem);
   left: 50%;
-  width: min(42rem, calc(100% - 3rem));
-  height: 26rem;
-  transform: translate3d(-50%, -50%, 0);
-  transform-origin: center;
-  will-change: transform, opacity;
+  z-index: var(--project-z);
+  width: var(--project-board-width);
+  height: calc(max(var(--line-left), var(--line-right)) + 31rem);
+  transform: translate3d(calc(-50% + var(--project-x)), var(--project-y), 0) scale(var(--project-scale));
+  transform-origin: center 15%;
+  transition: transform 110ms linear;
+  will-change: transform;
 }
 
-.project-card {
+.hanging-project__rig {
   position: relative;
-  display: flex;
   width: 100%;
   height: 100%;
-  overflow: hidden;
-  flex-direction: column;
-  border-radius: 1rem;
-  background: var(--color-surface);
-  box-shadow: 0 14px 34px rgba(23, 32, 51, 0.11);
-  cursor: pointer;
-  transition:
-    box-shadow 220ms ease-out,
-    transform 220ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.projects-stage-canvas-focused .project-card {
-  transition-property: box-shadow;
-}
-
-.project-card:focus-visible {
-  outline: 4px solid var(--color-focus);
-  outline-offset: 4px;
-}
-
-.project-card.project-card-selected {
-  width: 100%;
-  height: 100%;
-  box-shadow: 0 28px 64px rgba(36, 59, 107, 0.18);
-  cursor: default;
-  pointer-events: auto;
-}
-
-.project-card__close {
-  position: absolute;
-  top: 0.875rem;
-  right: 0.875rem;
-  z-index: 3;
-  display: inline-flex;
-  width: 2.75rem;
-  height: 2.75rem;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid var(--color-blue-border);
-  border-radius: 0.75rem;
-  background: var(--color-surface);
-  color: var(--color-navy);
-  box-shadow: 0 8px 20px rgba(36, 59, 107, 0.1);
-}
-
-.project-card__close:hover {
-  border-color: var(--color-blue);
-  color: var(--color-blue);
-}
-
-.project-card__close:focus-visible {
-  outline: 4px solid var(--color-focus);
-  outline-offset: 2px;
-}
-
-.project-card__close svg {
-  width: 1.125rem;
-  height: 1.125rem;
-}
-
-.project-card__visual {
-  position: relative;
-  display: flex;
-  height: clamp(7.5rem, 17vh, 9rem);
-  flex: 0 0 auto;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-  padding: 1rem;
-  background:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.74), transparent 56%),
-    var(--color-blue-soft);
-  color: var(--color-muted);
-  isolation: isolate;
-}
-
-.project-card__visual::before {
-  position: absolute;
-  inset: 0.75rem;
-  z-index: -1;
-  border: 1px solid var(--color-blue-border);
-  content: '';
-}
-
-.project-card__visual p {
-  max-width: 10rem;
-  text-align: center;
-  font-size: 0.75rem;
-  font-weight: 700;
-  line-height: 1.5;
-}
-
-.project-card__visual-mark {
+.hanging-line {
   position: absolute;
   top: 0;
-  right: 0;
-  width: 3.75rem;
-  height: 0.25rem;
-  background: var(--color-yellow);
-}
-
-.project-card__content {
-  display: flex;
-  min-width: 0;
-  flex: 1;
-  flex-direction: column;
-  padding: 1.45rem 1.4rem 1.6rem;
-}
-
-.project-card-selected .project-card__content {
-  overflow-y: auto;
-  padding: 1.5rem 4.5rem 1.75rem 1.75rem;
-  scrollbar-color: var(--color-blue-border) transparent;
-  scrollbar-width: thin;
-}
-
-.project-card__meta {
-  overflow-wrap: anywhere;
-  color: var(--color-muted);
-  font-size: 0.75rem;
-  font-weight: 700;
-  line-height: 1.5;
-}
-
-.project-card__title {
-  margin-top: 0.3rem;
-  overflow-wrap: anywhere;
-  color: var(--color-text);
-  font-size: clamp(1rem, 2vw, 1.5rem);
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  line-height: 1.3;
-}
-
-.project-card__description {
-  display: -webkit-box;
-  margin-top: 0.45rem;
-  overflow: hidden;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  color: var(--color-muted);
-  font-size: 1rem;
-  line-height: 1.6;
-}
-
-.project-card-selected .project-card__description {
-  display: block;
-  overflow: visible;
-  -webkit-line-clamp: initial;
-}
-
-.project-card__tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.35rem;
-  margin-top: auto;
-  padding-top: 0.65rem;
-}
-
-.project-card__tags li {
-  border: 1px solid var(--color-blue-border);
-  border-radius: 999px;
-  padding: 0.25rem 0.55rem;
-  background: var(--color-blue-soft);
-  color: var(--color-navy);
-  font-size: 0.75rem;
-  font-weight: 700;
-  line-height: 1.3;
-}
-
-.project-archive {
-  position: relative;
-  width: 100%;
-  isolation: isolate;
-  perspective: 44rem;
-  pointer-events: auto;
-}
-
-.project-archive::before {
-  position: absolute;
-  right: 0.45rem;
-  bottom: -0.45rem;
-  left: 0.45rem;
-  z-index: -1;
-  height: 3.25rem;
-  border-radius: 0 0 1rem 1rem;
-  background: rgba(23, 43, 80, 0.96);
-  box-shadow: 0 14px 28px rgba(23, 32, 51, 0.18);
-  content: '';
-  transform: perspective(44rem) rotateX(-7deg);
+  z-index: 1;
+  width: 1px;
+  height: var(--line-left);
+  background: linear-gradient(180deg, rgba(36, 59, 107, 0.52), rgba(36, 59, 107, 0.8));
+  box-shadow: 0 0 0 0.3px rgba(255, 255, 255, 0.8);
   transform-origin: top center;
 }
 
-.project-archive__papers {
+.hanging-line-left {
+  left: 21.5%;
+  height: var(--line-left);
+  transform: rotate(0.18deg);
+}
+
+.hanging-line-right {
+  right: 21.5%;
+  height: var(--line-right);
+  transform: rotate(-0.15deg);
+}
+
+.hanging-line__ceiling,
+.hanging-line__fastener {
+  position: absolute;
+  left: 50%;
+  display: block;
+  border-radius: 999px;
+  transform: translate(-50%, -50%);
+}
+
+.hanging-line__ceiling {
+  top: 0;
+  width: 5px;
+  height: 5px;
+  border: 1px solid rgba(36, 59, 107, 0.55);
+  background: var(--color-surface);
+  box-shadow: 0 1px 2px rgba(23, 32, 51, 0.16);
+}
+
+.hanging-line__fastener {
+  bottom: -4px;
+  width: 6px;
+  height: 6px;
+  background: var(--color-navy);
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.78), 0 2px 4px rgba(23, 32, 51, 0.2);
+}
+
+.project-board-shell {
+  position: absolute;
+  top: max(var(--line-left), var(--line-right));
+  left: 0;
+  width: 100%;
+  transform: perspective(1200px) rotateY(var(--board-perspective)) rotateZ(var(--board-tilt));
+  transform-origin: 50% 0;
+  transition: transform 120ms linear, filter 260ms ease-out;
+  filter: drop-shadow(0 1.25rem 1.25rem rgba(23, 32, 51, 0.1));
+  will-change: transform;
+}
+
+.project-board-shell::before {
+  content: '';
+  position: absolute;
+  inset: 4px calc(-1 * var(--edge-depth)) calc(-1 * var(--edge-depth)) 5px;
+  z-index: -2;
+  border: 1px solid #c7cedb;
+  border-radius: 0.65rem;
+  background: #d9dee8;
+}
+
+.project-board__edge {
+  position: absolute;
+  z-index: -1;
+  pointer-events: none;
+}
+
+.project-board__edge-right {
+  top: 6px;
+  right: calc(-1 * var(--edge-depth));
+  bottom: calc(-1 * var(--edge-depth) + 4px);
+  width: var(--edge-depth);
+  border-radius: 0 0.55rem 0.55rem 0;
+  background: linear-gradient(90deg, #e6e9ef, #c7ceda);
+  clip-path: polygon(0 0, 100% 5px, 100% 100%, 0 calc(100% - var(--edge-depth)));
+}
+
+.project-board__edge-bottom {
+  right: calc(-1 * var(--edge-depth) + 2px);
+  bottom: calc(-1 * var(--edge-depth));
+  left: 6px;
+  height: var(--edge-depth);
+  border-radius: 0 0 0.55rem 0.55rem;
+  background: linear-gradient(180deg, #d9dee7, #bec6d4);
+  clip-path: polygon(0 0, calc(100% - var(--edge-depth)) 0, 100% 100%, var(--edge-depth) 100%);
+}
+
+.project-board {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid #d8dde6;
+  border-radius: 0.62rem;
+  background: var(--color-surface);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    0 0.3rem 0.7rem rgba(23, 32, 51, 0.055);
+}
+
+.project-board__mount {
+  position: absolute;
+  top: -1px;
+  z-index: 5;
+  width: 0.72rem;
+  height: 0.34rem;
+  border: 1px solid rgba(36, 59, 107, 0.32);
+  border-top: 0;
+  border-radius: 0 0 999px 999px;
+  background: linear-gradient(180deg, #eef1f5, #cbd2dd);
+  box-shadow: 0 1px 2px rgba(23, 32, 51, 0.1);
+}
+
+.project-board__mount-left {
+  left: calc(21.5% - 0.36rem);
+}
+
+.project-board__mount-right {
+  right: calc(21.5% - 0.36rem);
+}
+
+.project-board__visual {
+  position: relative;
+  display: flex;
+  aspect-ratio: 16 / 9;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-bottom: 1px solid var(--color-blue-border);
+  background:
+    radial-gradient(circle at 80% 18%, rgba(234, 191, 58, 0.19), transparent 24%),
+    linear-gradient(145deg, #f5f8fd 0%, #e7eef9 100%);
+}
+
+.project-board__visual-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(59, 95, 168, 0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(59, 95, 168, 0.07) 1px, transparent 1px);
+  background-size: 2rem 2rem;
+  mask-image: linear-gradient(135deg, black, transparent 76%);
+}
+
+.project-board__visual p {
+  position: relative;
+  z-index: 1;
+  color: var(--color-muted);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}
+
+.project-board__visual-number {
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
+  z-index: 1;
+  color: var(--color-navy);
+  font-size: clamp(1.65rem, 3vw, 2.35rem);
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.06em;
+}
+
+.project-board__visual-mark {
   position: absolute;
   right: 1rem;
-  bottom: calc(100% - 1.2rem);
-  left: 1rem;
-  height: 3.65rem;
-  perspective: 36rem;
-}
-
-.project-archive__papers span {
-  position: absolute;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  height: 2.65rem;
-  border: 1px solid var(--color-blue-border);
-  border-radius: 0.8rem 0.8rem 0 0;
-  background: var(--color-surface);
-  box-shadow: 0 5px 16px rgba(23, 32, 51, 0.06);
-  transform-origin: bottom center;
-}
-
-.project-archive__papers span::before {
-  position: absolute;
-  top: -0.6rem;
-  left: 0.8rem;
-  width: 4.5rem;
-  height: 0.65rem;
-  border: 1px solid var(--color-blue-border);
-  border-bottom: 0;
-  border-radius: 0.45rem 0.45rem 0 0;
-  background: inherit;
-  content: '';
-}
-
-.project-archive__papers span:nth-child(1) {
-  background: var(--color-surface);
-  transform: translateY(-1.05rem) scaleX(0.84) rotateX(-2deg);
-}
-
-.project-archive__papers span:nth-child(2) {
-  background: var(--color-blue-soft);
-  transform: translateY(-0.52rem) scaleX(0.92) rotateX(-1deg);
-}
-
-.project-archive__papers span:nth-child(2)::before {
-  left: 38%;
-}
-
-.project-archive__papers span:nth-child(3) {
-  transform: scaleX(0.98);
-}
-
-.project-archive__papers span:nth-child(3)::before {
-  right: 0.9rem;
-  left: auto;
-}
-
-.project-archive__body {
-  position: relative;
-  display: grid;
-  overflow: hidden;
-  grid-template-columns: 2.1rem minmax(0, 1fr);
-  grid-template-rows: auto auto;
-  gap: 0.8rem 0.9rem;
-  align-content: center;
-  align-items: start;
-  min-height: 12.25rem;
-  border-radius: 1rem;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  padding: 1.6rem 1.25rem 1.45rem;
-  background: var(--color-navy);
-  color: var(--color-surface);
-  box-shadow: 0 20px 40px rgba(36, 59, 107, 0.22);
-  transform: perspective(44rem) rotateX(0.75deg);
-  transform-origin: top center;
-}
-
-.project-archive__body::before {
-  position: absolute;
-  top: 0;
-  right: 1.25rem;
-  width: 4rem;
-  height: 0.25rem;
-  z-index: 3;
+  bottom: 1rem;
+  width: 3.25rem;
+  height: 0.28rem;
+  border-radius: 999px;
   background: var(--color-yellow);
-  content: '';
 }
 
-.project-archive__body::after {
-  position: absolute;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  z-index: 0;
-  height: 42%;
-  border-top: 1px solid rgba(255, 255, 255, 0.11);
-  background: linear-gradient(
-    180deg,
-    rgba(59, 95, 168, 0.12),
-    rgba(16, 32, 63, 0.28)
-  );
-  content: '';
-  pointer-events: none;
+.project-board__content {
+  padding: clamp(1.15rem, 2vw, 1.5rem);
 }
 
-.project-archive__body > * {
-  position: relative;
-  z-index: 2;
-}
-
-.project-archive__icon {
-  width: 2.1rem;
-  height: 2.1rem;
-  border: 1px solid rgba(234, 191, 58, 0.42);
-  border-radius: 0.65rem;
-  padding: 0.38rem;
-  background: rgba(234, 191, 58, 0.1);
-  color: var(--color-yellow);
-}
-
-.project-archive__copy {
-  min-width: 0;
-  padding-right: 0.2rem;
-}
-
-.project-archive__copy h3 {
-  font-size: 1.0625rem;
+.project-board__meta {
+  color: var(--color-blue);
+  font-size: 0.68rem;
   font-weight: 800;
-  line-height: 1.4;
-  text-wrap: balance;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
 }
 
-.project-archive__copy p {
-  margin-top: 0.28rem;
-  color: rgba(255, 255, 255, 0.76);
-  font-size: 0.75rem;
-  line-height: 1.65;
-}
-
-.project-archive__action {
-  display: inline-flex;
-  min-height: 2.4rem;
-  grid-column: 1 / -1;
-  gap: 0.55rem;
-  align-items: center;
-  justify-content: center;
-  margin-top: 0;
-  border: 1px solid rgba(255, 255, 255, 0.28);
-  border-radius: 0.75rem;
-  padding: 0.55rem 0.85rem;
-  background: var(--color-surface);
-  color: var(--color-navy);
-  font-size: 0.75rem;
+.project-board__title {
+  margin-top: 0.45rem;
+  color: var(--color-text);
+  font-size: clamp(1.2rem, 1.8vw, 1.55rem);
   font-weight: 800;
+  line-height: 1.35;
 }
 
-.project-archive__action:disabled {
-  opacity: 0.88;
-  cursor: not-allowed;
-}
-
-.project-archive__action svg {
-  width: 0.95rem;
-  height: 0.95rem;
-  flex: 0 0 auto;
-}
-
-.projects-scroll-hint {
-  width: 100%;
-  margin-top: 0.8rem;
+.project-board__description {
+  display: -webkit-box;
+  overflow: hidden;
+  margin-top: 0.65rem;
   color: var(--color-muted);
-  font-size: 0.75rem;
+  font-size: 0.85rem;
+  line-height: 1.65;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.project-board__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.9rem;
+  padding: 0;
+  list-style: none;
+}
+
+.project-board__tags li {
+  border: 1px solid var(--color-blue-border);
+  border-radius: 999px;
+  padding: 0.28rem 0.6rem;
+  background: var(--color-blue-soft);
+  color: var(--color-navy);
+  font-size: 0.64rem;
   font-weight: 700;
-  letter-spacing: 0.02em;
-  text-align: center;
 }
 
-.projects-scroll-scene-static {
+.hanging-project-active .project-board-shell {
+  filter: drop-shadow(0 1.65rem 1.55rem rgba(23, 32, 51, 0.145));
+}
+
+.hanging-project-active .project-board {
+  border-color: #cbd4e3;
+}
+
+.projects-conclusion {
+  --conclusion-x: 0px;
+  position: absolute;
+  top: 50%;
+  left: 55%;
+  z-index: 25;
+  width: min(34rem, 40vw);
+  transform: translate3d(calc(-50% + var(--conclusion-x)), -50%, 0);
+  transition: transform 110ms linear;
+  will-change: transform;
+}
+
+.projects-conclusion__overline {
+  margin-bottom: 0.8rem;
+  color: var(--color-blue);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.projects-conclusion h3 {
+  color: var(--color-text);
+  font-size: clamp(2rem, 4vw, 3.5rem);
+  font-weight: 800;
+  line-height: 1.22;
+  letter-spacing: -0.035em;
+}
+
+.projects-conclusion > p:not(.projects-conclusion__overline) {
+  max-width: 28rem;
+  margin-top: 1rem;
+  color: var(--color-muted);
+  font-size: 1rem;
+  line-height: 1.8;
+}
+
+.projects-conclusion__action {
+  gap: 0.7rem;
+  margin-top: 1.75rem;
+}
+
+.projects-conclusion__action svg {
+  width: 1.15rem;
+  height: 1.15rem;
+  transition: transform 200ms ease-out;
+}
+
+.projects-conclusion__action:hover svg,
+.projects-conclusion__action:focus-visible svg {
+  transform: translateX(0.22rem);
+}
+
+.projects-progress {
+  position: absolute;
+  right: max(2rem, calc((100vw - 1280px) / 2 + 3rem));
+  bottom: clamp(2rem, 5vh, 3.5rem);
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  color: var(--color-muted);
+  font-size: 0.65rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.08em;
+}
+
+.projects-progress__current {
+  color: var(--color-navy);
+}
+
+.projects-progress__track {
+  display: block;
+  width: clamp(4rem, 8vw, 7rem);
+  height: 1px;
+  overflow: hidden;
+  background: var(--color-blue-border);
+}
+
+.projects-progress__track span {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: var(--color-blue);
+  transform-origin: left center;
+}
+
+@keyframes scroll-cue {
+  0% { transform: translateX(-100%); }
+  48%, 62% { transform: translateX(0); }
+  100% { transform: translateX(100%); }
+}
+
+.projects-exhibition-static {
   height: auto;
+  padding-block: 5rem;
 }
 
-.projects-scroll-scene-static .projects-stage-canvas {
-  display: grid;
-  width: min(100%, 1280px);
-  height: auto;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 1.5rem;
-  margin: 0 auto;
-  overflow: visible;
-  padding: 2rem clamp(1.25rem, 4vw, 3rem) 4rem;
-}
-
-.projects-scroll-scene-static .projects-header {
-  position: static;
-  width: min(48rem, 100%);
-  grid-column: 1 / -1;
-  justify-self: center;
-  margin-bottom: 1.5rem;
-  opacity: 1;
-  transform: none;
-  visibility: visible;
-}
-
-.project-sheets-static {
-  position: static;
-  display: contents;
-}
-
-.project-sheets-static .project-sheet {
-  position: relative;
-  width: auto;
-  height: 21rem;
-  align-self: stretch;
-  margin-right: 0;
-  margin-block-end: 0;
-  margin-left: 0;
-  opacity: 1;
-  transform: none;
-  visibility: visible;
-  will-change: auto;
-}
-
-.projects-scroll-scene-static .project-archive-layer {
-  display: contents;
-}
-
-.projects-scroll-scene-static .project-archive-anchor {
+.projects-exhibition-static .projects-exhibition__stage {
   position: relative;
   top: auto;
-  width: min(22rem, calc(100% - 2rem));
-  grid-column: 1 / -1;
-  justify-self: center;
-  margin-top: 3rem;
-  pointer-events: auto;
+  height: auto;
+  min-height: 0;
+  overflow: visible;
 }
 
-@keyframes project-backdrop-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
+.projects-exhibition-static .projects-exhibition__ambient,
+.projects-exhibition-static .projects-scroll-cue,
+.projects-exhibition-static .projects-progress {
+  display: none;
 }
 
-@media (hover: hover) and (pointer: fine) {
-  .projects-stage-canvas:not(.projects-stage-canvas-focused) .project-card:hover,
-  .projects-stage-canvas:not(.projects-stage-canvas-focused) .project-card:focus-visible {
-    box-shadow: 0 20px 44px rgba(36, 59, 107, 0.17);
-    transform: translateY(-0.2rem) scale(1.015);
-  }
+.projects-exhibition-static .projects-introduction {
+  position: relative;
+  top: auto;
+  left: auto;
+  width: min(100% - 3rem, 72rem);
+  margin: 0 auto 4rem;
+  transform: none;
 }
 
-@media (min-width: 768px) {
-  .project-card.project-card-selected {
-    display: grid;
-    grid-template-columns: minmax(0, 1.08fr) minmax(16rem, 0.92fr);
-  }
+.projects-exhibition-static .projects-rail {
+  position: relative;
+  inset: auto;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 3.5rem clamp(2rem, 6vw, 5rem);
+  width: min(100% - 3rem, 64rem);
+  margin-inline: auto;
+}
 
-  .project-card-selected .project-card__visual {
-    height: auto;
-  }
+.projects-exhibition-static .hanging-project {
+  position: relative;
+  top: auto;
+  left: auto;
+  width: 100%;
+  height: calc(max(var(--line-left), var(--line-right)) + 31rem);
+  transform: translate3d(0, var(--project-y), 0);
+}
+
+.projects-exhibition-static .projects-conclusion {
+  position: relative;
+  top: auto;
+  left: auto;
+  width: min(100% - 3rem, 64rem);
+  margin: 5rem auto 0;
+  transform: none;
+}
+
+@media (max-width: 1279px) {
+  .projects-exhibition { --project-board-width: clamp(21.5rem, 35vw, 25rem); }
+  .projects-introduction { left: 3rem; width: min(35vw, 25rem); }
+  .projects-scroll-cue { left: 3rem; }
+  .projects-progress { right: 3rem; }
 }
 
 @media (max-width: 1023px) {
-  .project-sheet:nth-child(n + 5) {
-    display: none;
+  .projects-section { padding-block: 4.5rem; }
+
+  .projects-exhibition,
+  .projects-exhibition-static {
+    height: auto;
+    padding-block: 0;
   }
 
-  .project-sheet {
-    --project-sheet-base-height: clamp(18rem, 40svh, 20rem);
-    --project-sheet-height-growth: clamp(2.7rem, 6svh, 3rem);
-    width: clamp(16rem, 35vw, 18rem);
+  .projects-exhibition__stage {
+    position: relative;
+    top: auto;
+    height: auto;
+    min-height: 0;
+    overflow: visible;
   }
 
-  .project-sheets {
-    padding-top: clamp(14rem, 26svh, 17rem);
-    padding-bottom: clamp(14rem, 34svh, 21rem);
-  }
-}
+  .projects-exhibition__ambient,
+  .projects-scroll-cue,
+  .projects-progress { display: none; }
 
-@media (max-width: 767px) {
-  .projects-header {
-    top: 1.25rem;
-    width: calc(100% - 2.5rem);
-  }
-
-  .projects-header .section-title {
-    font-size: 1.875rem;
-    line-height: 1.3;
-  }
-
-  .projects-header .body-copy {
-    margin-top: 0.5rem;
-    font-size: 1rem;
-    line-height: 1.6;
-  }
-
-  .project-sheets {
-    gap: clamp(2.1875rem, 5svh, 3.125rem);
-    padding:
-      clamp(10.5rem, 24svh, 12.5rem)
-      1.25rem
-      clamp(10rem, 25svh, 13.5rem);
-  }
-
-  .project-sheet {
-    --project-sheet-base-height: 13rem;
-    --project-sheet-height-growth: 1.5rem;
-    width: min(68vw, 16rem);
-  }
-
-  .project-sheet:nth-child(n + 4) {
-    display: none;
-  }
-
-  .project-sheet:nth-child(1) {
-    margin-left: 0.25rem;
-  }
-
-  .project-sheet:nth-child(2) {
-    margin-right: 0.25rem;
-  }
-
-  .project-sheet:nth-child(3) {
-    margin-left: clamp(1rem, 7vw, 1.75rem);
-  }
-
-  .project-card__visual {
-    display: flex;
-    height: 4.5rem;
-    padding: 0.5rem;
-  }
-
-  .project-card__visual::before {
-    inset: 0.4rem;
-  }
-
-  .project-card__visual p {
-    font-size: 0.6875rem;
-    line-height: 1.35;
-  }
-
-  .project-card__visual img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-
-  .project-card__visual-mark {
-    width: 2.5rem;
-    height: 0.1875rem;
-  }
-
-  .project-card__content {
-    padding: 0.7rem 0.8rem 0.8rem;
-  }
-
-  .project-card__meta {
-    line-height: 1.4;
-  }
-
-  .project-card__title {
-    margin-top: 0.2rem;
-    line-height: 1.25;
-  }
-
-  .project-card__description {
-    margin-top: 0.3rem;
-    font-size: 0.875rem;
-    line-height: 1.45;
-  }
-
-  .project-card__tags {
-    gap: 0.25rem;
-    padding-top: 0.4rem;
-  }
-
-  .project-card__tags li {
-    padding: 0.2rem 0.45rem;
-    font-size: 0.6875rem;
-    line-height: 1.25;
-  }
-
-  .project-card-motion-selected {
-    width: calc(100% - 2rem);
-    height: min(22rem, calc(100dvh - var(--navbar-height) - 3rem));
-    min-height: 20rem;
-  }
-
-  .project-card-selected .project-card__visual {
-    display: flex;
-    height: 5rem;
-  }
-
-  .project-card-selected .project-card__content {
-    padding: 1.25rem;
-  }
-
-  .projects-stage-canvas:not(.projects-stage-canvas-focused) .project-card:hover,
-  .projects-stage-canvas:not(.projects-stage-canvas-focused) .project-card:focus-visible {
+  .projects-introduction {
+    position: relative;
+    top: auto;
+    left: auto;
+    width: auto;
+    max-width: 42rem;
+    margin: 0 auto 3.5rem;
+    padding-inline: 1.5rem;
     transform: none;
   }
 
-  .project-archive-anchor {
-    --project-archive-anchor-height: 11.75rem;
-    top: max(
-      var(--navbar-height),
-      calc(100svh - var(--project-archive-anchor-height) - clamp(5rem, 18svh, 10rem))
-    );
-    width: min(16.5rem, calc(100% - 3rem));
+  .projects-introduction__edition { margin-top: 2rem; }
+
+  .projects-rail {
+    position: relative;
+    inset: auto;
+    display: grid;
+    gap: 2.5rem;
+    width: min(100% - 2rem, 34rem);
+    margin-inline: auto;
   }
 
-  .project-archive__body {
-    grid-template-columns: 1.85rem minmax(0, 1fr);
-    gap: 0.65rem 0.75rem;
-    min-height: 9.75rem;
-    padding: 1rem 0.875rem 0.95rem;
+  .projects-exhibition-static .projects-rail {
+    grid-template-columns: 1fr;
+    width: min(100% - 2rem, 34rem);
   }
 
-  .project-archive__icon {
-    width: 1.85rem;
-    height: 1.85rem;
-    padding: 0.32rem;
+  .hanging-project {
+    position: relative;
+    top: auto;
+    left: auto;
+    width: 100%;
+    height: calc(max(var(--line-left), var(--line-right)) + 31rem);
+    transform: translate3d(0, var(--project-y), 0);
   }
 
-  .project-archive__copy h3 {
-    font-size: 1rem;
+  .projects-conclusion {
+    position: relative;
+    top: auto;
+    left: auto;
+    width: min(100% - 3rem, 34rem);
+    margin: 4rem auto 0;
+    transform: none;
+  }
+}
+
+@media (max-width: 639px) {
+  .projects-section { padding-block: 3.75rem; }
+  .projects-introduction { margin-bottom: 2.5rem; padding-inline: 1.25rem; }
+  .projects-rail { width: min(100% - 1.5rem, 30rem); gap: 1.75rem; }
+
+  .hanging-project {
+    --project-y: 0px !important;
+    height: calc(max(var(--line-left), var(--line-right)) + 28rem);
   }
 
-  .project-archive__copy p {
-    font-size: 0.75rem;
-    line-height: 1.65;
-  }
-
-  .project-archive__action {
-    min-height: 2.75rem;
-    padding: 0.5rem 0.75rem;
-  }
-
-  .projects-scroll-hint {
-    margin-top: 0.6rem;
-  }
-
-  .projects-scroll-scene-static .projects-stage-canvas {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 1rem;
-    padding: 1rem 1.25rem 3rem;
-  }
-
-  .project-sheets-static .project-sheet {
-    width: min(68vw, 16rem);
-    height: 14.5rem;
-    justify-self: center;
-  }
-
-  .projects-scroll-scene-static .project-archive-anchor {
-    grid-column: auto;
-    margin-top: 2.5rem;
-  }
+  .hanging-line-left { left: 18%; }
+  .hanging-line-right { right: 18%; }
+  .project-board__mount-left { left: calc(18% - 0.36rem); }
+  .project-board__mount-right { right: calc(18% - 0.36rem); }
+  .project-board__content { padding: 1rem; }
+  .project-board__description { font-size: 0.8rem; }
+  .projects-conclusion { width: min(100% - 2.5rem, 30rem); margin-top: 3rem; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .project-focus-backdrop {
+  .projects-scroll-cue__line::after {
     animation: none;
-  }
-
-  .project-card {
-    transition: none;
-  }
-
-  .projects-stage-canvas:not(.projects-stage-canvas-focused) .project-card:hover,
-  .projects-stage-canvas:not(.projects-stage-canvas-focused) .project-card:focus-visible {
     transform: none;
+  }
+
+  .projects-introduction,
+  .hanging-project,
+  .project-board-shell,
+  .projects-conclusion,
+  .projects-conclusion__action svg {
+    transition: none;
   }
 }
 </style>
