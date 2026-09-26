@@ -3,7 +3,7 @@ const { handleAnchorClick } = useSmoothScroll()
 </script>
 
 <template>
-  <main id="home" class="site-section overflow-hidden">
+  <section id="home" class="site-section overflow-hidden">
     <div class="site-container">
       <div class="grid items-center gap-8 sm:gap-10 md:grid-cols-[1.05fr_0.95fr] lg:gap-14">
         <section class="max-w-3xl">
@@ -59,5 +59,5 @@ const { handleAnchorClick } = useSmoothScroll()
         </section>
       </div>
     </div>
-  </main>
+  </section>
 </template>

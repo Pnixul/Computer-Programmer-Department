@@ -6,13 +6,15 @@ import { internshipGroups } from '~/data/internships'
   <section id="internship" class="site-section">
     <div class="site-container">
       <!-- Section Header -->
-      <header class="section-header">
-        <p class="eyebrow">ฝึกประสบการณ์วิชาชีพ</p>
-        <h2 class="section-title">
+      <header class="internship-intro">
+        <div>
+        <p class="section-kicker">ฝึกประสบการณ์วิชาชีพ</p>
+        <h2 class="subsection-title">
           <span class="block">ปฏิบัติงานจริง</span>
-          <span class="block md:whitespace-nowrap">เรียนรู้จาก<wbr><span class="whitespace-nowrap">สถานประกอบการ</span></span>
+          <span class="block">เรียนรู้จากสถานประกอบการ</span>
         </h2>
-        <p class="body-copy mt-5 max-w-3xl">
+        </div>
+        <p class="body-copy max-w-3xl">
           ผู้เรียนในแผนกคอมพิวเตอร์โปรแกรมเมอร์จะได้ฝึกประสบการณ์วิชาชีพผ่านการปฏิบัติงานจริงในสถานประกอบการต่าง ๆ เพื่อพัฒนาทักษะและเรียนรู้วัฒนธรรมการทำงาน
         </p>
       </header>
@@ -112,6 +114,11 @@ import { internshipGroups } from '~/data/internships'
 </template>
 
 <style scoped>
+.internship-intro { display: grid; align-items: end; gap: 1.5rem; }
+@media (min-width: 1024px) {
+  .internship-intro { grid-template-columns: 1fr 1fr; gap: 5rem; }
+}
+
 .internship-directory {
   margin-top: clamp(4rem, 8vw, 6rem);
 }

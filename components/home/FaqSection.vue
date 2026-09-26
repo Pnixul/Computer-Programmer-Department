@@ -1,12 +1,14 @@
-<script setup>
-import { faqCategories, faqItems } from '~/data/faq'
+<script setup lang="ts">
+import { faqCategories } from '~/data/faq'
+import type { FaqCategoryId } from '~/types/faq'
 
-const selectedCategory = ref('learning')
-const openQuestion = ref(null)
+const { items: faqItems, status, refresh } = useFaqs()
+const selectedCategory = ref<FaqCategoryId | 'all'>('learning')
+const openQuestion = ref<string | null>(null)
 
 const filteredFaqItems = computed(() => {
-  if (selectedCategory.value === 'all') return faqItems
-  return faqItems.filter(item => item.category === selectedCategory.value)
+  if (selectedCategory.value === 'all') return faqItems.value
+  return faqItems.value.filter(item => item.category === selectedCategory.value)
 })
 
 const selectedCategoryLabel = computed(() => {
@@ -14,21 +16,19 @@ const selectedCategoryLabel = computed(() => {
   return faqCategories.find(category => category.id === selectedCategory.value)?.label
 })
 
-const getCategoryLabel = categoryId => (
+const getCategoryLabel = (categoryId: FaqCategoryId) => (
   faqCategories.find(category => category.id === categoryId)?.label
 )
 
-const getQuestionIndex = item => faqItems.indexOf(item)
-
-const selectCategory = (categoryId) => {
+const selectCategory = (categoryId: FaqCategoryId | 'all') => {
   if (selectedCategory.value === categoryId) return
 
   selectedCategory.value = categoryId
   openQuestion.value = null
 }
 
-const toggleItem = (question) => {
-  openQuestion.value = openQuestion.value === question ? null : question
+const toggleItem = (id: string) => {
+  openQuestion.value = openQuestion.value === id ? null : id
 }
 </script>
 
@@ -37,8 +37,8 @@ const toggleItem = (question) => {
     <div id="faq" class="site-container section-scroll-anchor">
       <div class="mx-auto max-w-[1080px]">
         <header class="faq-section-header section-header mx-auto text-center">
-          <p class="eyebrow">FAQ</p>
-          <h2 class="section-title">
+          <p class="section-kicker justify-center">FAQ</p>
+          <h2 class="subsection-title">
             คำถามที่พบบ่อย
           </h2>
           <p class="body-copy mx-auto mt-5 max-w-3xl">
@@ -109,25 +109,31 @@ const toggleItem = (question) => {
             </p>
           </div>
 
-          <Transition name="faq-list" mode="out-in">
+          <p v-if="status === 'pending'" role="status" class="body-copy">กำลังโหลดคำถาม…</p>
+          <div v-else-if="status === 'error'" role="alert">
+            <p class="body-copy">ไม่สามารถโหลดคำถามได้</p>
+            <button type="button" class="btn-secondary mt-4" @click="refresh">ลองอีกครั้ง</button>
+          </div>
+          <p v-else-if="!filteredFaqItems.length" class="body-copy">ยังไม่มีคำถามในหมวดหมู่นี้</p>
+          <Transition v-else name="faq-list" mode="out-in">
             <div
               :key="selectedCategory"
               class="grid items-start gap-3 sm:gap-4 lg:grid-cols-2"
             >
               <article
                 v-for="item in filteredFaqItems"
-                :key="item.question"
+                :key="item.id"
                 class="faq-item rounded-[18px]"
-                :class="{ 'faq-item-active': openQuestion === item.question }"
+                :class="{ 'faq-item-active': openQuestion === item.id }"
               >
                 <h4>
                   <button
-                    :id="`faq-question-${getQuestionIndex(item)}`"
+                    :id="`faq-question-${item.id}`"
                     class="faq-trigger flex w-full items-center justify-between gap-4 px-4 py-5 text-left sm:gap-6 sm:px-5 sm:py-6 lg:py-4"
                     type="button"
-                    :aria-expanded="openQuestion === item.question"
-                    :aria-controls="`faq-answer-${getQuestionIndex(item)}`"
-                    @click="toggleItem(item.question)"
+                    :aria-expanded="openQuestion === item.id"
+                    :aria-controls="`faq-answer-${item.id}`"
+                    @click="toggleItem(item.id)"
                   >
                     <span>
                       <span
@@ -141,23 +147,23 @@ const toggleItem = (question) => {
                       </span>
                     </span>
                     <span class="faq-icon" aria-hidden="true">
-                      {{ openQuestion === item.question ? '−' : '+' }}
+                      {{ openQuestion === item.id ? '−' : '+' }}
                     </span>
                   </button>
                 </h4>
 
                 <div
-                  :id="`faq-answer-${getQuestionIndex(item)}`"
+                  :id="`faq-answer-${item.id}`"
                   class="faq-answer-grid"
-                  :class="{ 'faq-answer-grid-open': openQuestion === item.question }"
+                  :class="{ 'faq-answer-grid-open': openQuestion === item.id }"
                   role="region"
-                  :aria-labelledby="`faq-question-${getQuestionIndex(item)}`"
-                  :aria-hidden="openQuestion !== item.question"
+                  :aria-labelledby="`faq-question-${item.id}`"
+                  :aria-hidden="openQuestion !== item.id"
                 >
                   <div class="min-h-0 overflow-hidden">
                     <div class="px-5 pb-5 sm:px-6 sm:pb-6">
                       <div class="border-t border-[var(--color-border)] pt-4 text-sm leading-7 text-[var(--color-muted)] sm:text-base">
-                        <p>{{ item.answer }}</p>
+                        <p class="whitespace-pre-wrap">{{ item.answer }}</p>
                       </div>
                     </div>
                   </div>
@@ -254,6 +260,8 @@ const toggleItem = (question) => {
 }
 
 .faq-item {
+  min-width: 0;
+  overflow-wrap: anywhere;
   border: 1px solid var(--color-border);
   background: var(--color-surface);
   box-shadow: 0 8px 24px rgba(23, 32, 51, 0.045);

@@ -2,6 +2,8 @@
 import type { CSSProperties } from 'vue'
 import { firstProject, otherProjects } from '~/data/projects'
 
+const { handleAnchorClick } = useSmoothScroll()
+
 const projects = [
   {
     number: firstProject.number,
@@ -365,7 +367,7 @@ onBeforeUnmount(() => {
         <div class="projects-exhibition__ambient" aria-hidden="true"></div>
 
         <header ref="introduction" class="projects-introduction">
-          <p class="eyebrow">Project exhibition</p>
+          <p class="section-kicker">ผลงานผู้เรียน</p>
           <h2 class="section-title">ผลงานผู้เรียน</h2>
           <p class="body-copy mt-5 max-w-md">
             จากการเรียนรู้สู่การลงมือสร้างจริง
@@ -451,16 +453,16 @@ onBeforeUnmount(() => {
           :inert="!usesStaticPresentation && !isConclusionInteractive ? true : undefined"
           :aria-hidden="!usesStaticPresentation && !isConclusionInteractive ? 'true' : undefined"
         >
-          <p class="projects-conclusion__overline">End of selection</p>
-          <h3>ยังมีผลงานอีกมาก<br>ให้คุณได้สำรวจ</h3>
-          <p>ดูผลงานเพิ่มเติมจากผู้เรียนในแผนก</p>
-          <NuxtLink to="/projects" class="btn-primary projects-conclusion__action">
-            <span>ดูโปรเจกต์ทั้งหมด</span>
+          <p class="projects-conclusion__overline">จากห้องเรียนสู่โลกการทำงาน</p>
+          <h3>สิ่งที่ได้ลงมือสร้าง<br>คือจุดเริ่มต้นของประสบการณ์</h3>
+          <p>นำทักษะจากโปรเจกต์ไปเรียนรู้กับสถานประกอบการ</p>
+          <a href="#internship" class="btn-primary projects-conclusion__action" @click="handleAnchorClick($event, '#internship')">
+            <span>สำรวจประสบการณ์ฝึกงาน</span>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <path d="M5 12h14" />
               <path d="m13 6 6 6-6 6" />
             </svg>
-          </NuxtLink>
+          </a>
         </div>
 
         <div v-if="!usesStaticPresentation" class="projects-progress" aria-hidden="true">

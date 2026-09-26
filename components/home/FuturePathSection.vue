@@ -1,8 +1,8 @@
 <template>
-  <section id="future" class="site-section site-section-alt">
+  <section id="future" class="site-section site-section-alt future-section">
     <div class="site-container">
       <header class="section-header">
-        <p class="eyebrow">หลังจบการศึกษา</p>
+        <p class="section-kicker">หลังจบการศึกษา</p>
         <h2 class="section-title">
           เส้นทางการเรียนต่อ
         </h2>
@@ -91,11 +91,28 @@
         </div>
       </section>
 
-      <div class="mt-14 rounded-2xl border border-[var(--color-blue-border)] bg-[var(--color-blue-soft)] p-6 md:mt-16 md:p-8 lg:mt-20 lg:p-10">
-        <p class="max-w-4xl text-base font-medium leading-7 text-[var(--color-navy)] md:text-lg md:leading-9">
+      <div class="mt-10 border-t border-white/25 pt-6 md:mt-14">
+        <p class="max-w-4xl text-sm leading-7 text-[var(--color-muted)]">
           สาขาข้างต้นเป็นเพียงตัวอย่างเส้นทางการศึกษาต่อ ไม่ใช่การรับรองสิทธิในการเข้าศึกษา โดยคุณสมบัติและเกณฑ์การรับสมัครแตกต่างกันตามสถาบันและหลักสูตร ควรตรวจสอบข้อมูลจากสถาบันที่สนใจก่อนสมัคร
         </p>
       </div>
     </div>
   </section>
 </template>
+
+<style scoped>
+.future-section {
+  --color-text: #ffffff;
+  --color-muted: #d4def0;
+  --color-body: #d4def0;
+  background: var(--color-navy);
+}
+.future-section .section-kicker { color: var(--color-yellow); }
+.future-section .section-header { max-width: 48rem; }
+.future-section .section-title { font-size: clamp(2rem, 4vw, 2.75rem); }
+.future-section .subsection-title { font-size: clamp(1.25rem, 2.5vw, 1.75rem); color: var(--color-yellow); }
+.future-section .surface-card { padding: 1.5rem 0 0; min-height: 0; border: 0; border-top: 1px solid #ffffff40; border-radius: 0; background: transparent; box-shadow: none; transform: none; }
+.future-section .surface-card > span { display: none; }
+.future-section .surface-card h4 { font-size: 1.125rem; }
+.future-section .surface-card p, .future-section .surface-card ul { font-size: 0.9375rem; line-height: 1.9; }
+</style>

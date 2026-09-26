@@ -1,9 +1,9 @@
 <template>
-  <section id="about" class="site-section site-section-alt pt-8 sm:pt-10 md:pt-12 lg:pt-14">
-    <div class="site-container">
-      <header class="section-header mb-8 md:mb-10 lg:mb-12">
-        <p class="eyebrow">เกี่ยวกับแผนก</p>
-        <h2 class="section-title">
+  <section id="about" class="site-section site-section-alt about-section">
+    <div class="site-container about-layout">
+      <header>
+        <p class="section-kicker">เกี่ยวกับแผนก</p>
+        <h2 class="subsection-title">
           รู้จักแผนกคอมพิวเตอร์โปรแกรมเมอร์
         </h2>
         <p class="body-copy mt-4 max-w-3xl">
@@ -11,15 +11,8 @@
         </p>
       </header>
 
-      <div class="grid items-center gap-10 md:grid-cols-[0.92fr_1.08fr] lg:gap-14 xl:gap-16">
-        <div class="media-placeholder hidden max-w-[560px] md:flex md:max-w-none">
-          <p class="media-placeholder-text">
-            พื้นที่สำหรับรูปภาพ
-          </p>
-        </div>
-
-        <ul class="space-y-3">
-          <li class="flex items-center gap-4 rounded-2xl border border-[var(--color-border)] bg-white px-5 py-4 sm:px-6 sm:py-5">
+        <ul class="about-principles">
+          <li>
             <div class="accent-icon rounded-full" aria-hidden="true">01</div>
             <div>
               <h3 class="text-lg font-bold text-[var(--color-text)]">เรียนผ่านการลงมือทำ</h3>
@@ -27,7 +20,7 @@
             </div>
           </li>
 
-          <li class="flex items-center gap-4 rounded-2xl border border-[var(--color-border)] bg-white px-5 py-4 sm:px-6 sm:py-5">
+          <li>
             <div class="accent-icon rounded-full" aria-hidden="true">02</div>
             <div>
               <h3 class="text-lg font-bold text-[var(--color-text)]">ได้เรียนรู้จากการฝึกงาน</h3>
@@ -35,7 +28,7 @@
             </div>
           </li>
 
-          <li class="flex items-center gap-4 rounded-2xl border border-[var(--color-border)] bg-white px-5 py-4 sm:px-6 sm:py-5">
+          <li>
             <div class="accent-icon rounded-full" aria-hidden="true">03</div>
             <div>
               <h3 class="text-lg font-bold text-[var(--color-text)]">ไม่มีพื้นฐานก็เริ่มได้</h3>
@@ -43,7 +36,17 @@
             </div>
           </li>
         </ul>
-      </div>
     </div>
   </section>
 </template>
+
+<style scoped>
+.about-section { border-bottom: 1px solid var(--color-border); }
+.about-layout { display: grid; gap: 2.5rem; }
+.about-principles li { display: flex; align-items: start; gap: 1rem; padding: 1.5rem 0; border-top: 1px solid var(--color-border); }
+.about-principles .accent-icon { width: 2rem; height: 2rem; border: 0; background: transparent; justify-content: start; }
+@media (min-width: 1024px) {
+  .about-layout { grid-template-columns: 1fr 1fr; gap: 5rem; }
+  .about-section { padding-block: 4rem; }
+}
+</style>

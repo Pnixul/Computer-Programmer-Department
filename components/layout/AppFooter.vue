@@ -1,5 +1,12 @@
 <script setup>
+import { navigationItems } from '~/data/navigation'
+
+const route = useRoute()
 const { handleAnchorClick } = useSmoothScroll()
+const quickLinks = navigationItems.filter(item => ['about', 'curriculum', 'projects', 'news', 'faq'].includes(item.id))
+const navigate = (event, item) => {
+  if (route.path === '/') handleAnchorClick(event, item.href.slice(1))
+}
 </script>
 
 <template>
@@ -25,17 +32,8 @@ const { handleAnchorClick } = useSmoothScroll()
         <nav class="order-4 md:order-none" aria-labelledby="footer-links-title">
           <h2 id="footer-links-title" class="text-base font-bold sm:text-lg">ลิงก์ด่วน</h2>
           <ul class="mt-4 space-y-2.5 text-sm text-[var(--color-blue-soft)]/80 sm:text-base">
-            <li>
-              <a class="inline-flex rounded focus:outline-none focus-visible:ring-4 focus-visible:ring-[var(--color-focus)] hover:text-white" href="#about" @click="handleAnchorClick($event, '#about')">เกี่ยวกับแผนก</a>
-            </li>
-            <li>
-              <a class="inline-flex rounded focus:outline-none focus-visible:ring-4 focus-visible:ring-[var(--color-focus)] hover:text-white" href="#curriculum" @click="handleAnchorClick($event, '#curriculum')">การเรียนการสอน</a>
-            </li>
-            <li>
-              <a class="inline-flex rounded focus:outline-none focus-visible:ring-4 focus-visible:ring-[var(--color-focus)] hover:text-white" href="#projects" @click="handleAnchorClick($event, '#projects')">ผลงานผู้เรียน</a>
-            </li>
-            <li>
-              <a class="inline-flex rounded focus:outline-none focus-visible:ring-4 focus-visible:ring-[var(--color-focus)] hover:text-white" href="#faq" @click="handleAnchorClick($event, '#faq')">FAQ</a>
+            <li v-for="item in quickLinks" :key="item.id">
+              <NuxtLink class="inline-flex min-h-11 items-center rounded focus:outline-none focus-visible:ring-4 focus-visible:ring-[var(--color-focus)] hover:text-white" :to="item.href" @click.capture="navigate($event, item)">{{ item.label }}</NuxtLink>
             </li>
           </ul>
         </nav>
@@ -98,6 +96,7 @@ const { handleAnchorClick } = useSmoothScroll()
 
       <div class="mt-8 border-t border-white/15 py-3.5 text-center text-sm text-[var(--color-blue-soft)]/70 md:mt-9 md:text-left">
         <p>© 2026 แผนกคอมพิวเตอร์โปรแกรมเมอร์ · วิทยาลัยเทคนิคนครพนม</p>
+        <LayoutVisitorCount />
       </div>
     </div>
   </footer>

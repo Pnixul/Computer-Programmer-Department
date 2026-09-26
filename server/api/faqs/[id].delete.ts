@@ -1,0 +1,11 @@
+export default defineEventHandler(async (event) => {
+  requireFaqAdmin()
+  const id = validateFaqId(getRouterParam(event, 'id'))
+  const { data, error } = await getFaqDatabase(event)
+    .from('faqs').delete().eq('id', id).select('id')
+    .abortSignal(AbortSignal.timeout(8000))
+    .maybeSingle()
+  if (error) throw faqDatabaseError()
+  if (!data) throw createError({ statusCode: 404, statusMessage: 'FAQ not found' })
+  return sendNoContent(event)
+})

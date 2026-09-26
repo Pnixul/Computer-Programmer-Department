@@ -6,6 +6,7 @@ const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)'
 
 export default defineNuxtPlugin((nuxtApp) => {
   const instance = shallowRef<Lenis | null>(null)
+  const router = useRouter()
   const desktopPointer = window.matchMedia(DESKTOP_POINTER_QUERY)
   const reducedMotion = window.matchMedia(REDUCED_MOTION_QUERY)
 
@@ -15,7 +16,9 @@ export default defineNuxtPlugin((nuxtApp) => {
   }
 
   const syncInstance = () => {
-    const shouldEnable = desktopPointer.matches && !reducedMotion.matches
+    const path = router.currentRoute.value.path
+    const isAdmin = path === '/admin' || path.startsWith('/admin/')
+    const shouldEnable = desktopPointer.matches && !reducedMotion.matches && !isAdmin
 
     if (!shouldEnable) {
       destroyInstance()
@@ -38,6 +41,7 @@ export default defineNuxtPlugin((nuxtApp) => {
   }
 
   const destroy = () => {
+    removeRouteHook()
     desktopPointer.removeEventListener('change', syncInstance)
     reducedMotion.removeEventListener('change', syncInstance)
     destroyInstance()
@@ -45,6 +49,7 @@ export default defineNuxtPlugin((nuxtApp) => {
 
   desktopPointer.addEventListener('change', syncInstance)
   reducedMotion.addEventListener('change', syncInstance)
+  const removeRouteHook = router.afterEach(syncInstance)
   syncInstance()
 
   nuxtApp.vueApp.onUnmount(destroy)
