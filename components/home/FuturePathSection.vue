@@ -114,5 +114,8 @@
 .future-section .surface-card { padding: 1.5rem 0 0; min-height: 0; border: 0; border-top: 1px solid #ffffff40; border-radius: 0; background: transparent; box-shadow: none; transform: none; }
 .future-section .surface-card > span { display: none; }
 .future-section .surface-card h4 { font-size: 1.125rem; }
-.future-section .surface-card p, .future-section .surface-card ul { font-size: 0.9375rem; line-height: 1.9; }
+.future-section .surface-card p, .future-section .surface-card ul { font-size: 1rem; line-height: 1.9; }
+@media (min-width: 1024px) {
+  .future-section .surface-card p, .future-section .surface-card ul { font-size: 1.0625rem; }
+}
 </style>

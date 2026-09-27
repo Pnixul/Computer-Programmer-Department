@@ -1,7 +1,8 @@
 export default defineEventHandler(async (event) => {
-  requireFaqAdmin()
+  requireAdminMutation(event)
+  const { database } = await requireAdmin(event)
   const id = validateFaqId(getRouterParam(event, 'id'))
-  const { data, error } = await getFaqDatabase(event)
+  const { data, error } = await database
     .from('faqs').delete().eq('id', id).select('id')
     .abortSignal(AbortSignal.timeout(8000))
     .maybeSingle()

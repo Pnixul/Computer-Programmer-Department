@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { validateFaqInput, validateFaqPatch } from '../shared/faq-validation.ts'
-import { requireFaqAdmin, validateFaqId, parseFaqBody } from '../server/utils/faq.ts'
+import { validateFaqId, parseFaqBody } from '../server/utils/faq.ts'
 import { faqSeedItems } from '../data/faq.ts'
 
 const valid = { category: 'learning', question: ' A question? ', answer: ' First line\nSecond line ' }
@@ -37,8 +37,4 @@ test('server validation returns 400 for invalid IDs and payloads', () => {
     assert.throws(() => validateFaqId(id), { statusCode: 400 })
   }
   assert.throws(() => parseFaqBody({ ...valid, category: 'unknown' }, validateFaqInput), { statusCode: 400 })
-})
-
-test('writes unconditionally fail closed until Admin Auth is implemented', () => {
-  assert.throws(() => requireFaqAdmin(), error => error.statusCode === 403 && error.data.code === 'FAQ_WRITES_DISABLED')
 })

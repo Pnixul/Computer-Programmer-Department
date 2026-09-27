@@ -772,7 +772,7 @@ onBeforeUnmount(() => {
   position: relative;
   z-index: 1;
   color: var(--color-muted);
-  font-size: 0.82rem;
+  font-size: 0.875rem;
   font-weight: 700;
   letter-spacing: 0.03em;
 }
@@ -810,9 +810,9 @@ onBeforeUnmount(() => {
 
 .project-board__meta {
   color: var(--color-blue);
-  font-size: 0.68rem;
-  font-weight: 800;
-  letter-spacing: 0.1em;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
 }
 
@@ -829,10 +829,10 @@ onBeforeUnmount(() => {
   overflow: hidden;
   margin-top: 0.65rem;
   color: var(--color-muted);
-  font-size: 0.85rem;
-  line-height: 1.65;
+  font-size: 1rem;
+  line-height: 1.8;
   -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
+  -webkit-line-clamp: 3;
 }
 
 .project-board__tags {
@@ -850,8 +850,8 @@ onBeforeUnmount(() => {
   padding: 0.28rem 0.6rem;
   background: var(--color-blue-soft);
   color: var(--color-navy);
-  font-size: 0.64rem;
-  font-weight: 700;
+  font-size: 0.875rem;
+  font-weight: 500;
 }
 
 .hanging-project-active .project-board-shell {
@@ -1140,7 +1140,6 @@ onBeforeUnmount(() => {
   .project-board__mount-left { left: calc(18% - 0.36rem); }
   .project-board__mount-right { right: calc(18% - 0.36rem); }
   .project-board__content { padding: 1rem; }
-  .project-board__description { font-size: 0.8rem; }
   .projects-conclusion { width: min(100% - 2.5rem, 30rem); margin-top: 3rem; }
 }
 

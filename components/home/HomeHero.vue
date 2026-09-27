@@ -31,33 +31,41 @@ const { handleAnchorClick } = useSmoothScroll()
           </div>
         </section>
 
-        <section class="hidden justify-center md:flex md:justify-end" aria-label="พื้นที่สำหรับภาพประกอบของแผนก">
-          <div class="surface-card w-full max-w-[540px] p-3 sm:p-5 lg:max-w-[560px]">
-            <div class="rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)]">
-              <div class="flex items-center gap-2 border-b border-[var(--color-border)] px-3 py-2.5 sm:px-4 sm:py-3">
-                <span class="h-2.5 w-2.5 rounded-full bg-[var(--color-yellow)]"></span>
-                <span class="h-2.5 w-2.5 rounded-full bg-[var(--color-blue-border)]"></span>
-                <span class="h-2.5 w-2.5 rounded-full bg-[var(--color-navy)]"></span>
-              </div>
-              <div class="grid aspect-[4/3] place-items-center p-4 sm:aspect-[5/4] sm:p-7">
-                <div class="w-full space-y-3 rounded-2xl border border-[var(--color-blue-border)] bg-white p-4 shadow-[0_12px_28px_rgba(23,32,51,0.06)] sm:space-y-4 sm:p-5">
-                  <div class="h-3 w-2/3 rounded-full bg-[var(--color-navy)]"></div>
-                  <div class="h-3 w-5/6 rounded-full bg-[var(--color-blue-soft)]"></div>
-                  <div class="h-3 w-1/2 rounded-full bg-[var(--color-blue-soft)]"></div>
-                  <div class="mt-4 grid grid-cols-3 gap-2 sm:mt-6 sm:gap-3">
-                    <div class="h-14 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] sm:h-16"></div>
-                    <div class="h-14 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] sm:h-16"></div>
-                    <div class="h-14 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] sm:h-16"></div>
-                  </div>
-                  <p class="pt-1 text-center text-sm font-bold text-[var(--color-muted)] sm:pt-2">
-                    พื้นที่สำหรับภาพประกอบ
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
+        <img
+          class="hero-mascot"
+          src="/images/mascot/mascot-hero.png"
+          alt=""
+          width="1536"
+          height="1024"
+          draggable="false"
+        >
       </div>
     </div>
   </section>
 </template>
+
+<style scoped>
+.hero-mascot {
+  justify-self: end;
+  width: min(75%, 15rem);
+  height: auto;
+  aspect-ratio: 27 / 40;
+  object-fit: contain;
+  object-position: right;
+}
+
+@media (max-width: 767px) {
+  .hero-mascot {
+    justify-self: center;
+    /* Center visible artwork: PNG padding is 77px left / 31px right at 1225px wide. */
+    transform: translateX(-1.88%);
+  }
+}
+
+@media (min-width: 768px) {
+  .hero-mascot {
+    justify-self: center;
+    width: min(100%, 21.6rem);
+  }
+}
+</style>

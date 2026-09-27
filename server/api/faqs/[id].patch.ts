@@ -1,10 +1,11 @@
 import { validateFaqPatch } from '~/shared/faq-validation'
 
 export default defineEventHandler(async (event) => {
-  requireFaqAdmin()
+  requireAdminMutation(event)
+  const { database } = await requireAdmin(event)
   const id = validateFaqId(getRouterParam(event, 'id'))
   const input = parseFaqBody(await readBody(event), validateFaqPatch)
-  const { data, error } = await getFaqDatabase(event)
+  const { data, error } = await database
     .from('faqs').update(input).eq('id', id)
     .select('id, category, question, answer')
     .abortSignal(AbortSignal.timeout(8000))

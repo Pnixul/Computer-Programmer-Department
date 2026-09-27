@@ -3,8 +3,19 @@ useHead({
   htmlAttrs: { lang: 'th', class: 'admin-document' },
   meta: [{ name: 'robots', content: 'noindex, nofollow' }],
 })
-// This layout is an integration point for future server-backed authentication.
-// No route hiding or client-side check here provides authorization.
+const route = useRoute()
+const isLogin = computed(() => decodeURI(route.path).toLowerCase().replace(/\/$/, '') === '/admin/login')
+const { user, logout } = useAdminAuth()
+const loggingOut = ref(false)
+const logoutError = ref('')
+const signOut = async () => {
+  if (loggingOut.value) return
+  loggingOut.value = true
+  logoutError.value = ''
+  try { await logout() }
+  catch { logoutError.value = 'ออกจากระบบไม่สำเร็จ กรุณาลองอีกครั้ง' }
+  finally { loggingOut.value = false }
+}
 </script>
 
 <template>
@@ -16,18 +27,20 @@ useHead({
           <p class="font-bold text-[var(--color-navy)]">จัดการเว็บไซต์แผนก</p>
           <p class="mt-1 text-sm text-[var(--color-muted)]">คอมพิวเตอร์โปรแกรมเมอร์</p>
         </div>
-        <NuxtLink to="/" class="admin-button">ดูเว็บไซต์</NuxtLink>
+        <div class="flex flex-wrap items-center gap-3">
+          <span v-if="!isLogin && user" class="text-sm text-[var(--color-muted)]">{{ user.email }}</span>
+          <NuxtLink to="/" class="admin-button">ดูเว็บไซต์</NuxtLink>
+          <button v-if="!isLogin" type="button" class="admin-button" :disabled="loggingOut" @click="signOut">{{ loggingOut ? 'กำลังออก…' : 'ออกจากระบบ' }}</button>
+        </div>
       </div>
     </header>
-    <div class="site-container grid gap-6 py-6 lg:grid-cols-[12rem_minmax(0,1fr)] lg:gap-10 lg:py-10">
-      <nav aria-label="เมนูจัดการเว็บไซต์" class="flex gap-2 self-start lg:sticky lg:top-6 lg:flex-col">
+    <div class="site-container grid gap-6 py-6 lg:gap-10 lg:py-10" :class="{ 'lg:grid-cols-[12rem_minmax(0,1fr)]': !isLogin }">
+      <nav v-if="!isLogin" aria-label="เมนูจัดการเว็บไซต์" class="flex gap-2 self-start lg:sticky lg:top-6 lg:flex-col">
         <NuxtLink to="/admin" class="admin-nav" exact-active-class="admin-nav-active">ภาพรวม</NuxtLink>
         <NuxtLink to="/admin/faq" class="admin-nav" exact-active-class="admin-nav-active">จัดการ FAQ</NuxtLink>
       </nav>
       <main id="admin-main" tabindex="-1" class="min-w-0">
-        <p class="mb-6 rounded-xl border border-[var(--color-blue-border)] bg-[var(--color-blue-soft)] p-4 text-sm leading-7 text-[var(--color-navy)]">
-          ยังไม่มีระบบเข้าสู่ระบบ · FAQ อ่านข้อมูลจากฐานข้อมูล แต่ยังไม่เปิดให้บันทึกหรือลบจนกว่าจะมีการยืนยันสิทธิ์ผู้ดูแล สถิติผู้เข้าชมยังเป็นข้อมูลตัวอย่าง
-        </p>
+        <p v-if="logoutError" role="alert" class="mb-4 text-sm text-red-800">{{ logoutError }}</p>
         <slot />
       </main>
     </div>
@@ -57,7 +70,7 @@ html.admin-document body::-webkit-scrollbar { display: block; width: 10px; heigh
 .admin-button-danger { color: #a32626; border-color: #e7bcbc; }
 .admin-button-danger:hover { background: #fff4f4; }
 .admin-button:disabled { opacity: 0.55; cursor: wait; }
-.admin-panel { padding: clamp(1rem, 3vw, 1.5rem); border: 1px solid var(--color-border); border-radius: 1rem; background: white; }
+.admin-panel { padding-block: 1.5rem; border-block: 1px solid var(--color-border); }
 .admin-field { display: block; width: 100%; min-height: 44px; margin-top: 0.5rem; border: 1px solid #98a2b3; border-radius: 0.75rem; padding: 0.75rem; background: white; color: var(--color-text); font-weight: 400; }
 textarea.admin-field { resize: vertical; line-height: 1.8; }
 @media (min-width: 1024px) { .admin-nav { justify-content: flex-start; } }

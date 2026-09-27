@@ -138,11 +138,11 @@ const toggleItem = (id: string) => {
                     <span>
                       <span
                         v-if="selectedCategory === 'all'"
-                        class="mb-1.5 block text-xs font-bold text-[var(--color-blue)]"
+                        class="mb-1.5 block text-sm font-medium text-[var(--color-blue)]"
                       >
                         {{ getCategoryLabel(item.category) }}
                       </span>
-                      <span class="block text-[15px] font-bold leading-7 text-[var(--color-text)] sm:text-base md:text-lg">
+                      <span class="block text-base font-bold leading-7 text-[var(--color-text)] md:text-lg">
                         {{ item.question }}
                       </span>
                     </span>
@@ -162,7 +162,7 @@ const toggleItem = (id: string) => {
                 >
                   <div class="min-h-0 overflow-hidden">
                     <div class="px-5 pb-5 sm:px-6 sm:pb-6">
-                      <div class="border-t border-[var(--color-border)] pt-4 text-sm leading-7 text-[var(--color-muted)] sm:text-base">
+                      <div class="border-t border-[var(--color-border)] pt-4 text-base leading-7 text-[var(--color-muted)] lg:text-[17px]">
                         <p class="whitespace-pre-wrap">{{ item.answer }}</p>
                       </div>
                     </div>

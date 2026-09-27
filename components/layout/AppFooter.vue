@@ -24,14 +24,14 @@ const navigate = (event, item) => {
               แผนกคอมพิวเตอร์โปรแกรมเมอร์
             </h2>
           </div>
-          <p class="mt-4 max-w-sm text-sm leading-6 text-[var(--color-blue-soft)]/80">
+          <p class="mt-4 max-w-sm text-base leading-7 text-[var(--color-blue-soft)]/80">
             วิทยาลัยเทคนิคนครพนม
           </p>
         </section>
 
         <nav class="order-4 md:order-none" aria-labelledby="footer-links-title">
           <h2 id="footer-links-title" class="text-base font-bold sm:text-lg">ลิงก์ด่วน</h2>
-          <ul class="mt-4 space-y-2.5 text-sm text-[var(--color-blue-soft)]/80 sm:text-base">
+          <ul class="mt-4 space-y-2.5 text-base text-[var(--color-blue-soft)]/80">
             <li v-for="item in quickLinks" :key="item.id">
               <NuxtLink class="inline-flex min-h-11 items-center rounded focus:outline-none focus-visible:ring-4 focus-visible:ring-[var(--color-focus)] hover:text-white" :to="item.href" @click.capture="navigate($event, item)">{{ item.label }}</NuxtLink>
             </li>
@@ -40,7 +40,7 @@ const navigate = (event, item) => {
 
         <section class="order-1 md:order-none" aria-labelledby="footer-contact-title">
           <h2 id="footer-contact-title" class="text-base font-bold sm:text-lg">ติดต่อ</h2>
-          <ul class="mt-3 space-y-3 text-sm leading-6 md:mt-4 md:space-y-3.5">
+          <ul class="mt-3 space-y-3 text-base leading-7 md:mt-4 md:space-y-3.5">
             <li>
               <p class="font-semibold text-white">ที่อยู่</p>
               <p class="mt-0.5 text-[var(--color-blue-soft)]/80">

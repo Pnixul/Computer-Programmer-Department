@@ -31,10 +31,10 @@ defineProps<{ items: NewsItem[] }>()
 .news-visual-index, .news-visual-caption { position: absolute; left: 1rem; font-size: 0.65rem; font-weight: 500; letter-spacing: 0.12em; }
 .news-visual-index { top: 1rem; color: var(--color-yellow); }
 .news-visual-caption { bottom: 1rem; color: #ffffffb3; }
-.news-meta { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.5rem 1rem; color: var(--color-navy); font-size: 0.75rem; font-weight: 600; }
+.news-meta { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.5rem 1rem; color: var(--color-navy); font-size: 0.875rem; font-weight: 600; }
 .news-meta time { color: var(--color-muted); font-weight: 400; }
 .news-copy h3 { margin-top: 0.75rem; font-size: 1.125rem; font-weight: 700; line-height: 1.6; }
-.news-copy p { margin-top: 0.5rem; color: var(--color-muted); font-size: 0.875rem; line-height: 1.85; }
+.news-copy p { margin-top: 0.5rem; color: var(--color-muted); font-size: 1rem; line-height: 1.85; }
 @media (min-width: 768px) {
   .news-list { grid-template-columns: 1fr 1fr; gap: 1.75rem 2.5rem; }
   .news-list > li:first-child { grid-row: span 2; }

@@ -12,8 +12,15 @@ export const useFaqs = () => {
   const error = computed(() => requestError.value ? 'ไม่สามารถโหลดคำถามได้ กรุณาลองอีกครั้ง' : null)
 
   const mutationError = (cause: unknown) => {
+    if (cause instanceof FetchError && cause.statusCode === 401) {
+      if (import.meta.client) {
+        useAdminAuth().user.value = null
+        void navigateTo('/admin/login')
+      }
+      return new Error('เซสชันหมดอายุ กรุณาเข้าสู่ระบบอีกครั้ง')
+    }
     if (cause instanceof FetchError && cause.statusCode === 403) {
-      return new Error('ยังไม่เปิดให้บันทึกหรือลบคำถาม ต้องเชื่อมต่อระบบยืนยันตัวตนผู้ดูแลก่อน ข้อมูลยังไม่ถูกเปลี่ยนแปลง')
+      return new Error('บัญชีนี้ไม่มีสิทธิ์จัดการ FAQ กรุณาตรวจสอบสิทธิ์ผู้ดูแล')
     }
     return new Error('ไม่สามารถทำรายการได้ กรุณาลองอีกครั้ง')
   }
@@ -21,7 +28,7 @@ export const useFaqs = () => {
   const saveFaq = async (url: string, method: 'POST' | 'PATCH', input: FaqInput) => {
     const body = validateFaqInput(input)
     try {
-      return await $fetch<FaqItem>(url, { method, body, retry: 0, timeout: 10000 })
+      return await $fetch<FaqItem>(url, { method, body, headers: { 'x-admin-request': '1' }, retry: 0, timeout: 20000 })
     } catch (cause) {
       throw mutationError(cause)
     }
@@ -41,7 +48,7 @@ export const useFaqs = () => {
 
   const deleteFaq = async (id: string) => {
     try {
-      await $fetch('/api/faqs/' + encodeURIComponent(id), { method: 'DELETE', retry: 0, timeout: 10000 })
+      await $fetch('/api/faqs/' + encodeURIComponent(id), { method: 'DELETE', headers: { 'x-admin-request': '1' }, retry: 0, timeout: 20000 })
     } catch (cause) {
       throw mutationError(cause)
     }

@@ -1,9 +1,10 @@
 import { validateFaqInput } from '~/shared/faq-validation'
 
 export default defineEventHandler(async (event) => {
-  requireFaqAdmin()
+  requireAdminMutation(event)
+  const { database } = await requireAdmin(event)
   const input = parseFaqBody(await readBody(event), validateFaqInput)
-  const { data, error } = await getFaqDatabase(event)
+  const { data, error } = await database
     .from('faqs').insert(input).select('id, category, question, answer')
     .abortSignal(AbortSignal.timeout(8000))
     .single()

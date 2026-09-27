@@ -9,11 +9,11 @@ import { newsItems } from '~/data/news'
         <div>
           <p class="section-kicker">ความเคลื่อนไหวในแผนก</p>
           <h2 id="news-title" class="subsection-title">ข่าวและกิจกรรม</h2>
-          <p class="mt-3 text-sm leading-7 text-[var(--color-muted)]">เรื่องราวระหว่างทาง ทั้งในห้องเรียนและนอกห้องเรียน</p>
+          <p class="mt-3 text-base leading-7 text-[var(--color-muted)]">เรื่องราวระหว่างทาง ทั้งในห้องเรียนและนอกห้องเรียน</p>
         </div>
         <NuxtLink to="/news" class="news-all">ดูข่าวและกิจกรรมทั้งหมด <span aria-hidden="true">↗</span></NuxtLink>
       </header>
-      <p class="mb-5 text-xs text-[var(--color-muted)]">ตัวอย่างข่าวและกิจกรรม · ข้อมูลสมมติเพื่อแสดงรูปแบบเว็บไซต์</p>
+      <p class="mb-5 text-sm leading-6 text-[var(--color-muted)]">ตัวอย่างข่าวและกิจกรรม · ข้อมูลสมมติเพื่อแสดงรูปแบบเว็บไซต์</p>
       <NewsList :items="newsItems.slice(0, 3)" />
     </div>
   </section>

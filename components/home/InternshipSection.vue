@@ -31,7 +31,7 @@ import { internshipGroups } from '~/data/internships'
             <p class="mt-2 text-xl font-bold text-[var(--color-navy)] md:text-2xl">
               ประมาณ 1 ภาคเรียน
             </p>
-            <p class="mt-2 text-sm leading-6 text-[var(--color-muted)]">
+            <p class="mt-2 text-base leading-7 text-[var(--color-muted)]">
               ฝึกปฏิบัติงานจริงในสถานประกอบการ เพื่อพัฒนาทักษะวิชาชีพและเรียนรู้วัฒนธรรมองค์กร
             </p>
           </article>
@@ -45,14 +45,14 @@ import { internshipGroups } from '~/data/internships'
             <p class="mt-2 text-xl font-bold text-[var(--color-navy)] md:text-2xl">
               ประมาณ 1 ปีการศึกษา
             </p>
-            <p class="mt-2 text-sm leading-6 text-[var(--color-muted)]">
+            <p class="mt-2 text-base leading-7 text-[var(--color-muted)]">
               ทำงานกับโปรเจกต์และรับผิดชอบงานในองค์กร พร้อมเรียนรู้กระบวนการพัฒนางานจริงและการทำงานเป็นทีม
             </p>
           </article>
         </div>
 
         <!-- Disclaimer Note -->
-        <p class="mt-6 text-xs leading-5 text-[var(--color-muted)] md:leading-4">
+        <p class="mt-6 text-sm leading-7 text-[var(--color-muted)]">
           * การเปรียบเทียบนี้ไม่ได้หมายถึงเส้นทางบังคับจาก ปวช. สู่ ปวส. ประสบการณ์ฝึกงานของผู้เรียนแต่ละคนอาจแตกต่างกันตามระดับการศึกษาและหลักสูตร
         </p>
       </div>
@@ -174,7 +174,7 @@ import { internshipGroups } from '~/data/internships'
 
 .internship-group__header p {
   color: var(--color-muted);
-  font-size: 0.75rem;
+  font-size: 0.875rem;
   font-weight: 600;
   line-height: 1.5;
 }
@@ -212,9 +212,9 @@ import { internshipGroups } from '~/data/internships'
 
 .internship-entry__label {
   color: var(--color-muted);
-  font-size: 0.75rem;
-  font-weight: 600;
-  letter-spacing: 0.08em;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
   line-height: 1.5;
 }
 
@@ -233,8 +233,8 @@ import { internshipGroups } from '~/data/internships'
   overflow-wrap: anywhere;
   color: var(--color-text);
   font-size: 1rem;
-  font-weight: 600;
-  line-height: 1.35;
+  font-weight: 400;
+  line-height: 1.75;
 }
 
 .internship-entry__description {
@@ -255,8 +255,8 @@ import { internshipGroups } from '~/data/internships'
   flex-wrap: wrap;
   margin-top: 0.5rem;
   color: var(--color-navy);
-  font-size: 0.75rem;
-  font-weight: 600;
+  font-size: 0.9375rem;
+  font-weight: 400;
   line-height: 1.6;
 }
 

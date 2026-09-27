@@ -1,30 +1,58 @@
 <script setup>
 import { learningItems } from '~/data/learning'
 
-const activeIndex = ref(0)
+const section = ref(null)
+const visualColumn = ref(null)
+const activeIndex = ref(-1)
+const displayedIndex = ref(-1)
 let observer
-const visibleCards = new Map()
 
-onMounted(() => {
-  // Cards stay in normal document flow; only the companion visual changes.
-  observer = new IntersectionObserver((entries) => {
-    for (const entry of entries) {
-      const index = Number(entry.target.dataset.learningIndex)
-      if (entry.isIntersecting) visibleCards.set(index, entry.intersectionRatio)
-      else visibleCards.delete(index)
-    }
-    const closest = [...visibleCards].sort((a, b) => b[1] - a[1])[0]
-    if (closest) activeIndex.value = closest[0]
-  }, { rootMargin: '-20% 0px -35% 0px', threshold: [0, 0.25, 0.5, 0.75, 1] })
-
-  document.querySelectorAll('[data-learning-index]').forEach(card => observer.observe(card))
+// Decode only the requested illustration; retain the previous one while it loads.
+watch(activeIndex, async (index, _, onCleanup) => {
+  let cancelled = false
+  onCleanup(() => { cancelled = true })
+  if (index < 0) return
+  const image = new Image()
+  image.src = learningItems[index].image
+  try {
+    await image.decode()
+    if (!cancelled) displayedIndex.value = index
+  } catch {
+    // Keep the last available illustration if an asset cannot load.
+  }
 })
 
-onBeforeUnmount(() => observer?.disconnect())
+const observeReadingZone = () => {
+  observer?.disconnect()
+  if (!window.matchMedia('(min-width: 1024px)').matches) {
+    activeIndex.value = -1
+    displayedIndex.value = -1
+    return
+  }
+  const navbarHeight = parseFloat(getComputedStyle(visualColumn.value).top) || 0
+  const center = (window.innerHeight + navbarHeight) / 2
+  observer = new IntersectionObserver((entries) => {
+    const distance = entry => Math.abs(entry.boundingClientRect.top + entry.boundingClientRect.height / 2 - center)
+    const closest = entries.filter(entry => entry.isIntersecting).sort((a, b) => distance(a) - distance(b))[0]
+    if (closest) activeIndex.value = Number(closest.target.dataset.learningIndex)
+  }, { rootMargin: `-${center - 1}px 0px -${window.innerHeight - center - 1}px 0px`, threshold: 0 })
+
+  section.value.querySelectorAll('[data-learning-index]').forEach(card => observer.observe(card))
+}
+
+onMounted(() => {
+  observeReadingZone()
+  window.addEventListener('resize', observeReadingZone)
+})
+
+onBeforeUnmount(() => {
+  observer?.disconnect()
+  window.removeEventListener('resize', observeReadingZone)
+})
 </script>
 
 <template>
-  <section id="curriculum" class="site-section">
+  <section id="curriculum" ref="section" class="site-section">
     <div class="site-container">
       <header class="section-header">
         <p class="section-kicker">การเรียนการสอน</p>
@@ -37,28 +65,27 @@ onBeforeUnmount(() => observer?.disconnect())
       </header>
 
       <div
-        class="learning-scroll-layout grid gap-10 md:grid-cols-[42fr_58fr] lg:grid-cols-[45fr_55fr] lg:gap-14 xl:gap-16"
+        class="learning-scroll-layout grid gap-10 lg:grid-cols-[42fr_58fr] lg:gap-14 xl:gap-16"
       >
         <div
-          class="learning-visual-column hidden md:sticky md:block md:self-start"
+          ref="visualColumn"
+          class="learning-visual-column hidden lg:sticky lg:block lg:self-start"
           data-learning-visual
-          :data-active-card="learningItems[activeIndex].number"
+          :data-active-card="learningItems[activeIndex]?.number"
         >
-          <div
-            class="media-placeholder md:aspect-[4/3]"
-            :aria-label="learningItems[activeIndex].visual"
-          >
-            <div
-              v-for="(item, index) in learningItems"
-              :key="item.number"
-              class="learning-visual-slide"
-              :class="{ 'learning-visual-slide-active': index === activeIndex }"
-              :aria-hidden="index === activeIndex ? undefined : 'true'"
-            >
-              <p class="media-placeholder-text">
-                {{ item.visual }}
-              </p>
-            </div>
+          <div class="learning-illustration">
+            <Transition name="learning-visual">
+              <img
+                v-if="displayedIndex >= 0"
+                :key="learningItems[displayedIndex].number"
+                class="learning-visual-image"
+                :src="learningItems[displayedIndex].image"
+                :alt="learningItems[displayedIndex].visual"
+                width="1536"
+                height="1024"
+                decoding="async"
+              >
+            </Transition>
           </div>
         </div>
 
@@ -72,20 +99,15 @@ onBeforeUnmount(() => observer?.disconnect())
             >
               <article
                 :data-learning-card="item.number"
-                class="surface-card grid gap-4 sm:grid-cols-[auto_1fr_auto] sm:items-start sm:gap-5 md:grid-cols-[auto_1fr] xl:grid-cols-[auto_1fr_auto]"
+                class="learning-card surface-card"
               >
                 <p class="text-3xl font-extrabold leading-none text-[var(--color-navy)] md:text-4xl">
                   {{ item.number }}
                 </p>
-                <div>
-                  <h3 class="text-xl font-bold leading-tight text-[var(--color-text)] md:text-2xl">
-                    {{ item.title }}
-                  </h3>
-                  <p class="mt-3 text-base leading-7 text-[var(--color-muted)] md:leading-8">
-                    {{ item.description }}
-                  </p>
-                </div>
-                <div class="hidden h-14 w-14 items-center justify-center rounded-2xl border border-[var(--color-blue-border)] bg-[var(--color-blue-soft)] sm:flex md:hidden xl:flex">
+                <h3 class="min-w-0 text-xl font-bold leading-relaxed text-[var(--color-text)] sm:text-2xl">
+                  {{ item.title }}
+                </h3>
+                <div class="hidden h-14 w-14 items-center justify-center rounded-2xl border border-[var(--color-blue-border)] bg-[var(--color-blue-soft)] sm:flex lg:hidden xl:flex">
                   <svg
                     class="h-6 w-6 text-[var(--color-blue)]"
                     viewBox="0 0 24 24"
@@ -103,6 +125,9 @@ onBeforeUnmount(() => observer?.disconnect())
                     />
                   </svg>
                 </div>
+                <p class="learning-card-description text-base text-[var(--color-muted)] sm:text-[17px] lg:text-lg">
+                  {{ item.description }}
+                </p>
               </article>
             </div>
           </div>
@@ -123,46 +148,98 @@ onBeforeUnmount(() => observer?.disconnect())
   position: static;
 }
 
-.learning-visual-slide {
+.learning-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  align-content: center;
+  gap: 1.25rem 1rem;
+}
+
+.learning-card-description {
+  grid-column: 1 / -1;
+  line-height: 1.9;
+}
+
+@media (min-width: 640px) {
+  .learning-card {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 1.5rem;
+    padding: 2rem;
+  }
+}
+
+.learning-illustration {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 3 / 2;
+  max-height: calc(var(--learning-viewport) * 0.8);
+}
+
+.learning-visual-image {
   position: absolute;
   inset: 0;
-  z-index: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 2rem;
-  opacity: 0;
-  pointer-events: none;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.learning-visual-enter-active,
+.learning-visual-leave-active {
   transition: opacity 180ms ease-out;
 }
 
-.learning-visual-slide-active {
-  opacity: 1;
+.learning-visual-enter-from,
+.learning-visual-leave-to {
+  opacity: 0;
 }
 
 .learning-cards-column {
   min-width: 0;
 }
 
-@media (min-width: 768px) {
-  .learning-visual-column {
-    top: calc(var(--navbar-height) + 2rem);
+@media (min-width: 1024px) {
+  .learning-card {
+    grid-template-columns: auto minmax(0, 1fr);
   }
 }
 
-@media (max-height: 600px) {
+@media (min-width: 1280px) {
+  .learning-card {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+  }
+}
+
+/* Center the compact pair below the navbar; spacing belongs to the scroll stage. */
+@media (min-width: 1024px) {
+  .learning-scroll-layout {
+    --learning-viewport: calc(100svh - var(--navbar-height));
+  }
+
   .learning-visual-column {
-    position: static;
+    top: var(--navbar-height);
+    display: flex;
+    align-items: center;
+    height: var(--learning-viewport);
+  }
+
+  .learning-card-stage {
+    gap: 0;
+    padding-block: calc(var(--learning-viewport) * 0.125);
+  }
+
+  .learning-card-position {
+    display: grid;
+    align-items: center;
+    min-height: calc(var(--learning-viewport) * 0.75);
+    padding-block: 2rem;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .learning-visual-slide {
+  .learning-visual-enter-active,
+  .learning-visual-leave-active {
     transition: none;
-  }
-
-  .learning-visual-column {
-    position: static;
   }
 }
 </style>

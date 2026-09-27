@@ -12,24 +12,24 @@ const largestDay = computed(() => Math.max(1, ...statistics.value?.recentDays.ma
 <template>
   <div>
     <h1 class="text-2xl font-bold sm:text-3xl">ภาพรวมเว็บไซต์</h1>
-    <p class="mb-6 mt-2 text-[var(--color-muted)]">สถิติการเข้าชมเว็บไซต์แผนก</p>
+    <p class="mb-6 mt-2 text-[var(--color-muted)]">สถิติการเข้าชมเว็บไซต์แผนก · ข้อมูลตัวอย่าง</p>
     <p v-if="status === 'pending'" class="admin-panel" role="status">กำลังโหลดสถิติ…</p>
     <div v-else-if="status === 'error'" class="admin-panel" role="alert">
       <p>ไม่สามารถโหลดสถิติได้</p>
       <button type="button" class="admin-button mt-4" @click="refresh()">ลองอีกครั้ง</button>
     </div>
     <template v-else-if="statistics">
-      <dl class="grid gap-4 sm:grid-cols-2">
-        <div class="admin-panel">
+      <dl class="grid gap-6 border-y border-[var(--color-border)] py-6 sm:grid-cols-2">
+        <div>
           <dt class="text-sm text-[var(--color-muted)]">ผู้เข้าชมทั้งหมด</dt>
           <dd class="mt-2 text-3xl font-bold tabular-nums text-[var(--color-navy)]">{{ formatCount(statistics.totalVisitors) }} <span class="text-sm font-normal">ครั้ง</span></dd>
         </div>
-        <div class="admin-panel">
+        <div>
           <dt class="text-sm text-[var(--color-muted)]">ผู้เข้าชมวันนี้</dt>
           <dd class="mt-2 text-3xl font-bold tabular-nums text-[var(--color-navy)]">{{ formatCount(statistics.todayVisitors) }} <span class="text-sm font-normal">ครั้ง</span></dd>
         </div>
       </dl>
-      <section class="admin-panel mt-6" aria-labelledby="visitor-trend-title">
+      <section class="py-6" aria-labelledby="visitor-trend-title">
         <h2 id="visitor-trend-title" class="text-lg font-bold">การเข้าชมย้อนหลัง 7 วัน</h2>
         <p class="mt-1 text-sm leading-7 text-[var(--color-muted)]">ข้อมูลตัวอย่าง ณ {{ formatDate(statistics.asOf) }} · จำนวนครั้งที่เข้าชม ไม่ใช่จำนวนบุคคลที่ไม่ซ้ำกัน</p>
         <ul v-if="statistics.recentDays.length" class="mt-5 space-y-4">
